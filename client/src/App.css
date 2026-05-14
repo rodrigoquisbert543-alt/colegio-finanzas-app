@@ -1,0 +1,108 @@
+:root {
+  --primary: #2563eb;
+  --secondary: #64748b;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --bg: #f8fafc;
+  --text: #1e293b;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  margin: 0;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 1.5rem;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.btn-primary { background: var(--primary); color: white; }
+.btn-danger { background: var(--danger); color: white; }
+
+input, select {
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.25rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+/* Print Styles for Thermal Receipt */
+@media print {
+  @page {
+    margin: 0;
+  }
+  body * {
+    visibility: hidden;
+  }
+  #printable-receipt, #printable-receipt * {
+    visibility: visible;
+  }
+  #printable-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 80mm; /* Standard thermal roll width, but scales down if needed */
+    font-family: 'Cambria', 'Arial', serif;
+    font-size: 13px;
+    line-height: 1.4;
+    color: black;
+    padding: 10px;
+  }
+  .receipt-header h3 {
+    font-size: 16px;
+    margin: 5px 0;
+  }
+  .receipt-total {
+    font-size: 15px;
+    border-top: 1.5px solid black;
+  }
+}
+
+.receipt-header {
+  text-align: center;
+  border-bottom: 1px dashed #000;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.receipt-total {
+  border-top: 1px dashed #000;
+  margin-top: 10px;
+  padding-top: 5px;
+  font-weight: bold;
+}
