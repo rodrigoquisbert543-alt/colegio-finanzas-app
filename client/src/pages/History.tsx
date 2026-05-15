@@ -3,6 +3,7 @@ import { getReceipts, cancelReceipt, getUsers } from '../api';
 import { Receipt } from '../types';
 import { Search, XCircle, Printer } from 'lucide-react';
 
+// Define a type for the filters
 interface HistoryFilters {
   startDate: string;
   endDate: string;
@@ -19,17 +20,23 @@ const History = () => {
     endDate: '',
     folio: '',
     category: '',
-    studentName: ''
+    studentName: '',
   });
   const [cajeros, setCajeros] = useState<any[]>([]);
-  const [selectedForPrint, setSelectedMonthForPrint] = useState<any>(null);
+  const [selectedForPrint, setSelectedForPrint] = useState<any>(null);
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
 
+  // Fetch receipts based on current filters
   const fetchReceipts = async () => {
-    const res = await getReceipts(filters);
-    setReceipts(res.data);
+    try {
+      const res = await getReceipts(filters);
+      setReceipts(res.data);
+    } catch (error) {
+      console.error("Failed to fetch receipts", error);
+    }
   };
   
+  // Fetch the list of cashiers for the auditor filter
   const fetchCajeros = async () => {
     try {
       const res = await getUsers(); 
@@ -39,12 +46,14 @@ const History = () => {
     }
   };
 
+  // Effect to load initial data for auditors
   useEffect(() => {
     if (user.role === 'admin' || user.role === 'contador') {
       fetchCajeros();
     }
   }, [user.role]);
 
+  // Effect to refetch receipts whenever filters change
   useEffect(() => {
     fetchReceipts();
   }, [filters]);
@@ -61,7 +70,6 @@ const History = () => {
   };
 
   const handlePrint = (r: Receipt) => {
-    // Setup data for the printable hidden div
     const printData = {
       folio: r.folio,
       date: new Date(r.date).toLocaleString(),
@@ -73,34 +81,22 @@ const History = () => {
       totalAmount: r.total_amount,
       issuer: r.userName || 'Sistema'
     };
-    
-    // We use a trick: store it in a state that triggers a render of the printable div, then print.
-    // However, to make it instant like in EmitReceipt, we'll use a temporary state.
-    setSelectedMonthForPrint(printData);
+    setSelectedForPrint(printData);
     setTimeout(() => {
       window.print();
-      setSelectedMonthForPrint(null);
+      setSelectedForPrint(null);
     }, 100);
   };
 
   const handleExport = () => {
     const headers = ['Folio', 'Fecha', 'Cliente', 'Concepto', 'Categoria', 'Efectivo', 'QR', 'Total', 'Estado'];
     const rows = receipts.map(r => [
-      r.folio,
-      new Date(r.date).toLocaleDateString(),
-      r.studentName || 'General',
-      r.concept,
-      r.category,
-      r.amount_cash,
-      r.amount_qr,
-      r.total_amount,
-      r.status
+      r.folio, new Date(r.date).toLocaleDateString(), r.studentName || 'General',
+      r.concept, r.category, r.amount_cash, r.amount_qr, r.total_amount, r.status
     ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + headers.join(",") + "\n" 
-      + rows.map(e => e.join(",")).join("\n");
-
+    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "
+" + rows.map(e => e.join(",")).join("
+");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -151,15 +147,8 @@ const History = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>
-              <th>Folio</th>
-              <th>Fecha</th>
-              <th>Cliente / Alumno</th>
-              <th>Concepto</th>
-              <th>Efectivo</th>
-              <th>QR</th>
-              <th>Total</th>
-              <th>Estado</th>
-              <th>Acciones</th>
+              <th>Folio</th><th>Fecha</th><th>Cliente / Alumno</th><th>Concepto</th>
+              <th>Efectivo</th><th>QR</th><th>Total</th><th>Estado</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -173,24 +162,14 @@ const History = () => {
                 <td>Bs. {r.amount_qr.toFixed(2)}</td>
                 <td style={{ fontWeight: 'bold' }}>Bs. {r.total_amount.toFixed(2)}</td>
                 <td>
-                  <span style={{ 
-                    padding: '2px 8px', 
-                    borderRadius: '10px', 
-                    fontSize: '0.75rem',
-                    background: r.status === 'active' ? '#dcfce7' : '#fef2f2',
-                    color: r.status === 'active' ? '#166534' : '#991b1b'
-                  }}>
+                  <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', background: r.status === 'active' ? '#dcfce7' : '#fef2f2', color: r.status === 'active' ? '#166534' : '#991b1b' }}>
                     {r.status === 'active' ? 'Activo' : 'Anulado'}
                   </span>
                 </td>
                 <td style={{ display: 'flex', gap: '4px' }}>
-                  <button onClick={() => handlePrint(r)} className="btn btn-primary" style={{ padding: '4px', background: '#64748b' }} title="Re-imprimir">
-                    <Printer size={16} />
-                  </button>
+                  <button onClick={() => handlePrint(r)} className="btn btn-primary" style={{ padding: '4px', background: '#64748b' }} title="Re-imprimir"><Printer size={16} /></button>
                   {r.status === 'active' && (user.role === 'biblioteca' || user.role === 'caja' || user.role === 'admin') && (
-                    <button onClick={() => handleCancel(r.id)} className="btn btn-danger" style={{ padding: '4px' }} title="Anular">
-                      <XCircle size={16} />
-                    </button>
+                    <button onClick={() => handleCancel(r.id)} className="btn btn-danger" style={{ padding: '4px' }} title="Anular"><XCircle size={16} /></button>
                   )}
                 </td>
               </tr>
@@ -199,7 +178,6 @@ const History = () => {
         </table>
       </div>
 
-      {/* Hidden printable receipt for history */}
       {selectedForPrint && (
         <div id="printable-receipt">
           <div className="receipt-header">
@@ -221,23 +199,7 @@ const History = () => {
           <br />
           <p style={{ textAlign: 'center' }}>Emitido por: {selectedForPrint.issuer}</p>
           <p style={{ textAlign: 'center', fontSize: '10px' }}>Documento de Control Interno</p>
-          <div className="receipt-signature">
-            Recibí Conforme
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default History;iv className="receipt-row"><span>TOTAL GENERAL:</span> <span>Bs. {Number(selectedForPrint.totalAmount).toFixed(2)}</span></div>
-          </div>
-          <br />
-          <p style={{ textAlign: 'center' }}>Emitido por: {selectedForPrint.issuer}</p>
-          <p style={{ textAlign: 'center', fontSize: '10px' }}>Documento de Control Interno</p>
-          <div className="receipt-signature">
-            Recibí Conforme
-          </div>
+          <div className="receipt-signature">Recibí Conforme</div>
         </div>
       )}
     </div>
