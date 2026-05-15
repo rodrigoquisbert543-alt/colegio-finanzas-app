@@ -88,18 +88,20 @@ const History = () => {
     }, 100);
   };
 
-  const filteredTotals = React.useMemo(() => {
-    return receipts.reduce((acc, r) => {
-      if (r.status === 'active') {
-        if (r.category.includes('Ingreso')) {
-          acc.income += r.total_amount;
-        } else if (r.category.includes('Egreso')) {
-          acc.expense += r.total_amount;
-        }
-      }
-      return acc;
-    }, { income: 0, expense: 0 });
-  }, [receipts]);
+  const handleExport = () => {
+    const headers = ['Folio', 'Fecha', 'Cliente', 'Concepto', 'Categoria', 'Efectivo', 'QR', 'Total', 'Estado'];
+    const rows = receipts.map(r => [
+      r.folio, new Date(r.date).toLocaleDateString(), r.studentName || 'General',
+      r.concept, r.category, r.amount_cash, r.amount_qr, r.total_amount, r.status
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `reporte_contable_${filters.startDate || 'full'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+  };
 
   return (
     <div className="container">
@@ -149,17 +151,6 @@ const History = () => {
           )}
         </div>
 
-        <div className="summary-box">
-          <div className="summary-item income">
-            <strong>Total Ingresos (Filtro):</strong>
-            <span>Bs. {filteredTotals.income.toFixed(2)}</span>
-          </div>
-          <div className="summary-item expense">
-            <strong>Total Egresos (Filtro):</strong>
-            <span>Bs. {filteredTotals.expense.toFixed(2)}</span>
-          </div>
-        </div>
-
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>
@@ -169,17 +160,7 @@ const History = () => {
           </thead>
           <tbody>
             {receipts.map(r => (
-              <tr 
-                key={r.id} 
-                style={{ 
-                  borderBottom: '1px solid #e2e8f0', 
-                  backgroundColor: r.status === 'cancelled' 
-                    ? '#fee2e2' // Cancelled row color
-                    : r.category.includes('Ingreso') 
-                      ? '#f0fdf4' // Income row color
-                      : '#f8fafc' // Expense or neutral row color
-                }}
-              >
+              <tr key={r.id} style={{ borderBottom: '1px solid #e2e8f0', background: r.status === 'cancelled' ? '#fee2e2' : 'transparent' }}>
                 <td style={{ padding: '0.75rem' }}>{r.folio}</td>
                 <td>{new Date(r.date).toLocaleDateString()}</td>
                 <td>{r.studentName || 'General'}</td>
