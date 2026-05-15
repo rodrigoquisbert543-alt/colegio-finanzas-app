@@ -52,12 +52,6 @@ const History = () => {
   };
 
   useEffect(() => {
-    if (user.role === 'admin' || user.role === 'contador') {
-      fetchCajeros();
-    }
-  }, [user.role]);
-
-  useEffect(() => {
     fetchAllData();
   }, [filters]);
 
