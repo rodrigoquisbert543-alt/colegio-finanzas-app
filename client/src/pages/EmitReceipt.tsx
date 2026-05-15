@@ -219,10 +219,4 @@ const EmitReceipt = () => {
   );
 };
 
-export default EmitReceipt;iv>
-      )}
-    </div>
-  );
-};
-
 export default EmitReceipt;
