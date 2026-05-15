@@ -116,7 +116,7 @@ const History = () => {
           {(user.role === 'admin' || user.role === 'contador') && (
             <select onChange={(e) => setFilters({...filters, userId: e.target.value})}>
               <option value="">Todos los Cajeros</option>
-              {users.map(u => (
+              {cajeros.map((u: any) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
@@ -192,6 +192,20 @@ const History = () => {
           <div className="receipt-row"><span>Monto QR/Banco:</span> <span>Bs. {Number(selectedForPrint.amountQr).toFixed(2)}</span></div>
           <div className="receipt-total">
             <div className="receipt-row"><span>TOTAL GENERAL:</span> <span>Bs. {Number(selectedForPrint.totalAmount).toFixed(2)}</span></div>
+          </div>
+          <br />
+          <p style={{ textAlign: 'center' }}>Emitido por: {selectedForPrint.issuer}</p>
+          <p style={{ textAlign: 'center', fontSize: '10px' }}>Documento de Control Interno</p>
+          <div className="receipt-signature">
+            Recibí Conforme
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default History;iv className="receipt-row"><span>TOTAL GENERAL:</span> <span>Bs. {Number(selectedForPrint.totalAmount).toFixed(2)}</span></div>
           </div>
           <br />
           <p style={{ textAlign: 'center' }}>Emitido por: {selectedForPrint.issuer}</p>
