@@ -120,12 +120,14 @@ const EmitReceipt = () => {
           <label>Tipo de Operación</label>
           <select value={category} onChange={(e) => setCategory(e.target.value)}>
             <optgroup label="INGRESOS">
+              <option value="Ingreso: Inscripción a campamentos">Inscripción a campamentos</option>
               <option value="Ingreso: Sesiones de Psicología">Sesiones de Psicología</option>
               <option value="Ingreso: Alquileres">Alquileres</option>
               <option value="Ingreso: Transporte">Transporte</option>
               <option value="Ingreso: Otros ingresos">Otros ingresos</option>
             </optgroup>
             <optgroup label="EGRESOS">
+              <option value="Egreso: Campamentos">Campamentos</option>
               <option value="Egreso: Material de Escritorio">Material de Escritorio</option>
               <option value="Egreso: Otros Egresos">Otros Egresos</option>
             </optgroup>

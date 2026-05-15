@@ -117,7 +117,15 @@ async function startServer() {
     if (endDate) { params.push(endDate + ' 23:59:59'); query += ` AND r.date <= $${params.length}`; }
     if (folio) { params.push(`%${folio}%`); query += ` AND r.folio LIKE $${params.length}`; }
     if (studentId) { params.push(studentId); query += ` AND r.student_id = $${params.length}`; }
-    if (category) { params.push(category); query += ` AND r.category = $${params.length}`; }
+    if (category) {
+      if ((category as string).includes(',')) {
+        params.push((category as string).split(','));
+        query += ` AND r.category = ANY($${params.length})`;
+      } else {
+        params.push(category);
+        query += ` AND r.category = $${params.length}`;
+      }
+    }
     if (studentName) { 
       params.push(`%${studentName}%`);
       query += ` AND (s.name LIKE $${params.length} OR r.client_name LIKE $${params.length})`; 

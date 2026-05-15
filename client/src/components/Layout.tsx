@@ -14,9 +14,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
 
   const menuItems = [
-    { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'contador'] },
+    { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'contador', 'biblioteca', 'caja'] },
     { path: '/emit', label: 'Emitir Comprobante', icon: Receipt, roles: ['biblioteca', 'caja'] },
-    { path: '/history', label: 'Historial', icon: History, roles: ['admin', 'contador', 'biblioteca', 'caja'] },
+    { path: '/history', label: 'Detalle de Caja', icon: History, roles: ['admin', 'contador', 'biblioteca', 'caja'] },
     { path: '/students', label: 'Estudiantes', icon: GraduationCap, roles: ['admin'] },
   ];
 

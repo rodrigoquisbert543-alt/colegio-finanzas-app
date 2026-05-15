@@ -116,15 +116,24 @@ const History = () => {
         <div className="dashboard-grid" style={{ marginBottom: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
           <input type="text" placeholder="Buscar por Cliente..." onChange={(e) => setFilters({...filters, studentName: e.target.value})} />
           <input type="text" placeholder="Nro de Comprobante" onChange={(e) => setFilters({...filters, folio: e.target.value})} />
-          <select onChange={(e) => setFilters({...filters, category: e.target.value})}>
-            <option value="">Todos los tipos</option>
+          <select 
+            multiple={true}
+            onChange={(e) => {
+              const selectedCategories = Array.from(e.target.selectedOptions, option => option.value).join(',');
+              setFilters({...filters, category: selectedCategories});
+            }}
+            title="Seleccione una o más categorías (mantenga Ctrl o Cmd para selección múltiple)"
+            style={{ height: '100px' }}
+          >
             <optgroup label="INGRESOS">
+              <option value="Ingreso: Inscripción a campamentos">Inscripción a campamentos</option>
               <option value="Ingreso: Sesiones de Psicología">Sesiones de Psicología</option>
               <option value="Ingreso: Alquileres">Alquileres</option>
               <option value="Ingreso: Transporte">Transporte</option>
               <option value="Ingreso: Otros ingresos">Otros ingresos</option>
             </optgroup>
             <optgroup label="EGRESOS">
+              <option value="Egreso: Campamentos">Campamentos</option>
               <option value="Egreso: Material de Escritorio">Material de Escritorio</option>
               <option value="Egreso: Otros Egresos">Otros Egresos</option>
             </optgroup>

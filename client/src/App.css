@@ -53,7 +53,7 @@ input, select {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
 }
-/* Print Styles for Thermal Receipt - CORRECTED */
+/* Print Styles for Thermal Receipt - FINAL */
 @media print {
   @page {
     margin: 0;
@@ -69,9 +69,10 @@ input, select {
   }
   #printable-receipt {
     position: absolute;
-    left: 0;
     top: 0;
-    width: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80mm;
     max-width: 80mm;
     font-family: Arial, sans-serif;
     font-size: 11px;
