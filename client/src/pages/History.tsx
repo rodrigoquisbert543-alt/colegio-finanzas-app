@@ -103,20 +103,7 @@ const History = () => {
     link.click();
   };
 
-  const filteredTotals = React.useMemo(() => {
-    return receipts.reduce((acc, r) => {
-      if (r.status === 'active') {
-        if (r.category.includes('Ingreso')) {
-          acc.income += r.total_amount;
-        } else if (r.category.includes('Egreso')) {
-          acc.expense += r.total_amount;
-        }
-      }
-      return acc;
-    }, { income: 0, expense: 0 });
-  }, [receipts]);
-
-  return (
+  const handleExport = () => {
     <div className="container">
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -230,6 +217,15 @@ const History = () => {
           <br />
           <p style={{ textAlign: 'center' }}>Emitido por: {selectedForPrint.issuer}</p>
           <p style={{ textAlign: 'center', fontSize: '10px' }}>Documento de Control Interno</p>
+          <div className="receipt-signature">Recibí Conforme</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default History;
+ign: 'center', fontSize: '10px' }}>Documento de Control Interno</p>
           <div className="receipt-signature">Recibí Conforme</div>
         </div>
       )}

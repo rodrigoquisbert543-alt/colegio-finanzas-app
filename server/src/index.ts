@@ -219,6 +219,15 @@ async function startServer() {
     if (startDate) { params.push(startDate); query += ` AND date >= $${params.length}`; }
     if (endDate) { params.push(endDate + ' 23:59:59'); query += ` AND date <= $${params.length}`; }
     if (targetUserId) { params.push(targetUserId); query += ` AND user_id = $${params.length}`; }
+    if (category) {
+      if ((category as string).includes(',')) {
+        params.push((category as string).split(','));
+        query += ` AND category = ANY($${params.length})`;
+      } else {
+        params.push(category);
+        query += ` AND category = $${params.length}`;
+      }
+    }
 
     const resDb = await pool.query(query, params);
     res.json(resDb.rows[0]);
