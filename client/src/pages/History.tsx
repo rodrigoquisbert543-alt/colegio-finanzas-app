@@ -52,6 +52,13 @@ const History = () => {
   };
 
   useEffect(() => {
+    if (user.role === 'admin' || user.role === 'contador') {
+      fetchCajeros();
+    }
+    fetchAllData(); // Fetch initial data
+  }, []);
+
+  useEffect(() => {
     fetchAllData();
   }, [filters]);
 
@@ -60,7 +67,7 @@ const History = () => {
     if (!reason) return;
     try {
       await cancelReceipt(id, reason);
-      fetchAllData(); // Refetch both receipts and totals
+      fetchAllData();
     } catch (err) {
       alert('Error al anular');
     }
@@ -85,7 +92,9 @@ const History = () => {
       r.folio, new Date(r.date).toLocaleDateString(), r.studentName || 'General', r.concept, r.category,
       r.amount_cash, r.amount_qr, r.total_amount, r.status
     ]);
-    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "
+" + rows.map(e => e.join(",")).join("
+");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
