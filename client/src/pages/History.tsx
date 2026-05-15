@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { getReceipts, cancelReceipt, getUsers } from '../api';
+import { getReceipts, cancelReceipt, getUsers, getStats } from '../api';
 import { Receipt } from '../types';
 import { Search, XCircle, Printer } from 'lucide-react';
 
-// Define a type for the filters
 interface HistoryFilters {
   startDate: string;
   endDate: string;
@@ -24,19 +23,25 @@ const History = () => {
   });
   const [cajeros, setCajeros] = useState<any[]>([]);
   const [selectedForPrint, setSelectedForPrint] = useState<any>(null);
+  const [filteredTotals, setFilteredTotals] = useState({ income: 0, expense: 0 });
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
 
-  // Fetch receipts based on current filters
-  const fetchReceipts = async () => {
+  const fetchAllData = async () => {
     try {
-      const res = await getReceipts(filters);
-      setReceipts(res.data);
+      const [receiptsRes, totalsRes] = await Promise.all([
+        getReceipts(filters),
+        getStats(filters)
+      ]);
+      setReceipts(receiptsRes.data);
+      setFilteredTotals({
+        income: totalsRes.data.income_total || 0,
+        expense: totalsRes.data.expense_total || 0,
+      });
     } catch (error) {
-      console.error("Failed to fetch receipts", error);
+      console.error("Failed to fetch data", error);
     }
   };
   
-  // Fetch the list of cashiers for the auditor filter
   const fetchCajeros = async () => {
     try {
       const res = await getUsers(); 
@@ -46,16 +51,14 @@ const History = () => {
     }
   };
 
-  // Effect to load initial data for auditors
   useEffect(() => {
     if (user.role === 'admin' || user.role === 'contador') {
       fetchCajeros();
     }
   }, [user.role]);
 
-  // Effect to refetch receipts whenever filters change
   useEffect(() => {
-    fetchReceipts();
+    fetchAllData();
   }, [filters]);
 
   const handleCancel = async (id: number) => {
@@ -63,7 +66,7 @@ const History = () => {
     if (!reason) return;
     try {
       await cancelReceipt(id, reason);
-      fetchReceipts();
+      fetchAllData(); // Refetch both receipts and totals
     } catch (err) {
       alert('Error al anular');
     }
@@ -71,15 +74,9 @@ const History = () => {
 
   const handlePrint = (r: Receipt) => {
     const printData = {
-      folio: r.folio,
-      date: new Date(r.date).toLocaleString(),
-      studentName: r.studentName || 'Cliente General',
-      concept: r.concept,
-      category: r.category,
-      amountCash: r.amount_cash,
-      amountQr: r.amount_qr,
-      totalAmount: r.total_amount,
-      issuer: r.userName || 'Sistema'
+      folio: r.folio, date: new Date(r.date).toLocaleString(), studentName: r.studentName || 'Cliente General',
+      concept: r.concept, category: r.category, amountCash: r.amount_cash, amountQr: r.amount_qr,
+      totalAmount: r.total_amount, issuer: r.userName || 'Sistema'
     };
     setSelectedForPrint(printData);
     setTimeout(() => {
@@ -91,19 +88,22 @@ const History = () => {
   const handleExport = () => {
     const headers = ['Folio', 'Fecha', 'Cliente', 'Concepto', 'Categoria', 'Efectivo', 'QR', 'Total', 'Estado'];
     const rows = receipts.map(r => [
-      r.folio, new Date(r.date).toLocaleDateString(), r.studentName || 'General',
-      r.concept, r.category, r.amount_cash, r.amount_qr, r.total_amount, r.status
+      r.folio, new Date(r.date).toLocaleDateString(), r.studentName || 'General', r.concept, r.category,
+      r.amount_cash, r.amount_qr, r.total_amount, r.status
     ]);
-    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "
+" + rows.map(e => e.join(",")).join("
+");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
     link.setAttribute("download", `reporte_contable_${filters.startDate || 'full'}.csv`);
     document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   };
 
-  const handleExport = () => {
+  return (
     <div className="container">
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -117,12 +117,12 @@ const History = () => {
           <input type="text" placeholder="Buscar por Cliente..." onChange={(e) => setFilters({...filters, studentName: e.target.value})} />
           <input type="text" placeholder="Nro de Comprobante" onChange={(e) => setFilters({...filters, folio: e.target.value})} />
           <select 
-            multiple={true}
+            multiple
             onChange={(e) => {
-              const selectedCategories = Array.from(e.target.selectedOptions, option => option.value).join(',');
-              setFilters({...filters, category: selectedCategories});
+              const selected = Array.from(e.target.selectedOptions, option => option.value).join(',');
+              setFilters({...filters, category: selected});
             }}
-            title="Seleccione una o más categorías (mantenga Ctrl o Cmd para selección múltiple)"
+            title="Selección múltiple con Ctrl/Cmd"
             style={{ height: '100px' }}
           >
             <optgroup label="INGRESOS">
@@ -171,7 +171,13 @@ const History = () => {
           </thead>
           <tbody>
             {receipts.map(r => (
-              <tr key={r.id} style={{ borderBottom: '1px solid #e2e8f0', background: r.status === 'cancelled' ? '#fee2e2' : 'transparent' }}>
+              <tr 
+                key={r.id} 
+                style={{ 
+                  borderBottom: '1px solid #e2e8f0', 
+                  backgroundColor: r.status === 'cancelled' ? '#fee2e2' : r.category.includes('Ingreso') ? '#f0fdf4' : '#f8fafc'
+                }}
+              >
                 <td style={{ padding: '0.75rem' }}>{r.folio}</td>
                 <td>{new Date(r.date).toLocaleDateString()}</td>
                 <td>{r.studentName || 'General'}</td>
@@ -217,15 +223,6 @@ const History = () => {
           <br />
           <p style={{ textAlign: 'center' }}>Emitido por: {selectedForPrint.issuer}</p>
           <p style={{ textAlign: 'center', fontSize: '10px' }}>Documento de Control Interno</p>
-          <div className="receipt-signature">Recibí Conforme</div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default History;
-ign: 'center', fontSize: '10px' }}>Documento de Control Interno</p>
           <div className="receipt-signature">Recibí Conforme</div>
         </div>
       )}
