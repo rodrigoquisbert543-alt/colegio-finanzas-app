@@ -94,8 +94,10 @@ async function startServer() {
   });
 
   // Receipts API
-  app.get('/api/receipts', authenticateToken, async (req: Request, res: Response) => {
+  app.get('/api/receipts', authenticateToken, async (req: any, res: Response) => {
     const { startDate, endDate, folio, studentId, category, studentName } = req.query;
+    const { id: userId, role } = req.user;
+
     let query = `
       SELECT r.*, u.name as "userName", COALESCE(r.client_name, s.name, 'Cliente General') as "studentName" 
       FROM receipts r
@@ -104,6 +106,12 @@ async function startServer() {
       WHERE 1=1
     `;
     const params: any[] = [];
+
+    // Role-based filtering
+    if (role === 'biblioteca' || role === 'caja') {
+      params.push(userId);
+      query += ` AND r.user_id = $${params.length}`;
+    }
 
     if (startDate) { params.push(startDate); query += ` AND r.date >= $${params.length}`; }
     if (endDate) { params.push(endDate + ' 23:59:59'); query += ` AND r.date <= $${params.length}`; }
@@ -178,8 +186,15 @@ async function startServer() {
     }
   });
 
-  app.get('/api/stats', authenticateToken, async (req: Request, res: Response) => {
-    const { startDate, endDate, userId } = req.query;
+  app.get('/api/stats', authenticateToken, async (req: any, res: Response) => {
+    const { startDate, endDate, userId: queryUserId } = req.query;
+    const { id: currentUserId, role } = req.user;
+
+    let targetUserId = queryUserId;
+    if ((role === 'biblioteca' || role === 'caja') && !queryUserId) {
+      targetUserId = currentUserId;
+    }
+
     let query = `
       SELECT 
         SUM(CASE WHEN status = 'active' AND category LIKE 'Ingreso%' THEN total_amount ELSE 0 END) as income_total,
@@ -195,7 +210,7 @@ async function startServer() {
 
     if (startDate) { params.push(startDate); query += ` AND date >= $${params.length}`; }
     if (endDate) { params.push(endDate + ' 23:59:59'); query += ` AND date <= $${params.length}`; }
-    if (userId) { params.push(userId); query += ` AND user_id = $${params.length}`; }
+    if (targetUserId) { params.push(targetUserId); query += ` AND user_id = $${params.length}`; }
 
     const resDb = await pool.query(query, params);
     res.json(resDb.rows[0]);

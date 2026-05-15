@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getReceipts, cancelReceipt } from '../api';
+import { getReceipts, cancelReceipt, getUsers } from '../api';
 import { Receipt } from '../types';
 import { Search, XCircle, Printer } from 'lucide-react';
 
@@ -112,6 +112,15 @@ const History = () => {
           </select>
           <input type="date" title="Desde" onChange={(e) => setFilters({...filters, startDate: e.target.value})} />
           <input type="date" title="Hasta" onChange={(e) => setFilters({...filters, endDate: e.target.value})} />
+
+          {(user.role === 'admin' || user.role === 'contador') && (
+            <select onChange={(e) => setFilters({...filters, userId: e.target.value})}>
+              <option value="">Todos los Cajeros</option>
+              {users.map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
