@@ -54,10 +54,10 @@ input, select {
   gap: 1rem;
 }
 
-/* Print Styles for Thermal Receipt */
+/* Print Styles for Thermal Receipt - MODIFIED */
 @media print {
   @page {
-    margin: 0;
+    margin: 0.5cm; /* Add some margin for centering and printing */
   }
   body * {
     visibility: hidden;
@@ -66,20 +66,27 @@ input, select {
     visibility: visible;
   }
   #printable-receipt {
-    /* STYLES FOR FULL PAGE PRINTING - MODIFIED */
+    position: static; /* Changed from absolute */
+    margin: 0 auto; /* Center the receipt */
     width: 100%;
+    max-width: 80mm;
     font-family: Arial, sans-serif;
-    font-size: 11pt;
-    line-height: 1.5;
+    font-size: 11px; /* Changed from 13px */
+    line-height: 1.4;
     color: black;
-    padding: 20px; /* Add some margin for printing */
+  }
+  .receipt-signature {
+    margin-top: 40px;
+    padding-top: 10px;
+    text-align: center;
+    font-size: 10px;
   }
   .receipt-header h3 {
-    font-size: 16pt;
+    font-size: 14px;
     margin: 5px 0;
   }
   .receipt-total {
-    font-size: 12pt;
+    font-size: 12px;
     border-top: 1.5px solid black;
   }
 }

@@ -210,7 +210,16 @@ const EmitReceipt = () => {
           <br />
           <p style={{ textAlign: 'center' }}>Emitido por: {lastReceipt.issuer}</p>
           <p style={{ textAlign: 'center', fontSize: '10px' }}>Documento de Control Interno</p>
+          <div className="receipt-signature">
+            Recibí Conforme
+          </div>
         </div>
+      )}
+    </div>
+  );
+};
+
+export default EmitReceipt;iv>
       )}
     </div>
   );

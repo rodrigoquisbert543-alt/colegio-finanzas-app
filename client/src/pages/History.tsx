@@ -100,6 +100,8 @@ const History = () => {
           <select onChange={(e) => setFilters({...filters, category: e.target.value})}>
             <option value="">Todos los tipos</option>
             <optgroup label="INGRESOS">
+              <option value="Ingreso: Sesiones de Psicología">Sesiones de Psicología</option>
+              <option value="Ingreso: Alquileres">Alquileres</option>
               <option value="Ingreso: Transporte">Transporte</option>
               <option value="Ingreso: Otros ingresos">Otros ingresos</option>
             </optgroup>
@@ -185,6 +187,9 @@ const History = () => {
           <br />
           <p style={{ textAlign: 'center' }}>Emitido por: {selectedForPrint.issuer}</p>
           <p style={{ textAlign: 'center', fontSize: '10px' }}>Documento de Control Interno</p>
+          <div className="receipt-signature">
+            Recibí Conforme
+          </div>
         </div>
       )}
     </div>
