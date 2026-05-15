@@ -34,10 +34,20 @@ async function startServer() {
   // Login Route
   app.post('/api/login', async (req: Request, res: Response) => {
     const { username, password } = req.body;
+    console.log(`Intento de login para usuario: "${username}"`);
     try {
       const resDb = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
       const user = resDb.rows[0];
-      if (user && await bcrypt.compare(password, user.password)) {
+      
+      if (!user) {
+        console.log(`Usuario "${username}" no encontrado en la base de datos.`);
+        return res.status(401).json({ message: 'Usuario no encontrado' });
+      }
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      console.log(`Comparación de contraseña para "${username}": ${isMatch ? 'EXITOSA' : 'FALLIDA'}`);
+
+      if (isMatch) {
         const token = jwt.sign(
           { id: user.id, username: user.username, role: user.role, name: user.name },
           JWT_SECRET,
@@ -45,9 +55,10 @@ async function startServer() {
         );
         res.json({ token, user: { id: user.id, username: user.username, role: user.role, name: user.name } });
       } else {
-        res.status(401).json({ message: 'Credenciales inválidas' });
+        res.status(401).json({ message: 'Contraseña incorrecta' });
       }
     } catch (error) {
+      console.error('Error en el proceso de login:', error);
       res.status(500).json({ message: 'Error en el servidor' });
     }
   });

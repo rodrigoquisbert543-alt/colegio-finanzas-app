@@ -66,23 +66,20 @@ input, select {
     visibility: visible;
   }
   #printable-receipt {
-    position: absolute;
-    left: 0;
-    top: 0;
+    /* STYLES FOR FULL PAGE PRINTING - MODIFIED */
     width: 100%;
-    max-width: 80mm; /* Standard thermal roll width, but scales down if needed */
-    font-family: 'Cambria', 'Arial', serif;
-    font-size: 13px;
-    line-height: 1.4;
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
     color: black;
-    padding: 10px;
+    padding: 20px; /* Add some margin for printing */
   }
   .receipt-header h3 {
-    font-size: 16px;
+    font-size: 16pt;
     margin: 5px 0;
   }
   .receipt-total {
-    font-size: 15px;
+    font-size: 12pt;
     border-top: 1.5px solid black;
   }
 }
