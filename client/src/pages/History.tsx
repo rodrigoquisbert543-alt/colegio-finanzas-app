@@ -103,6 +103,19 @@ const History = () => {
     link.click();
   };
 
+  const filteredTotals = React.useMemo(() => {
+    return receipts.reduce((acc, r) => {
+      if (r.status === 'active') {
+        if (r.category.includes('Ingreso')) {
+          acc.income += r.total_amount;
+        } else if (r.category.includes('Egreso')) {
+          acc.expense += r.total_amount;
+        }
+      }
+      return acc;
+    }, { income: 0, expense: 0 });
+  }, [receipts]);
+
   return (
     <div className="container">
       <div className="card">
@@ -149,6 +162,17 @@ const History = () => {
               ))}
             </select>
           )}
+        </div>
+
+        <div className="summary-box">
+          <div className="summary-item income">
+            <strong>Total Ingresos (Filtro):</strong>
+            <span>Bs. {filteredTotals.income.toFixed(2)}</span>
+          </div>
+          <div className="summary-item expense">
+            <strong>Total Egresos (Filtro):</strong>
+            <span>Bs. {filteredTotals.expense.toFixed(2)}</span>
+          </div>
         </div>
 
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
