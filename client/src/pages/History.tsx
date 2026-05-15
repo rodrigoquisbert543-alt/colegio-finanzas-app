@@ -3,22 +3,47 @@ import { getReceipts, cancelReceipt, getUsers } from '../api';
 import { Receipt } from '../types';
 import { Search, XCircle, Printer } from 'lucide-react';
 
+interface HistoryFilters {
+  startDate: string;
+  endDate: string;
+  folio: string;
+  category: string;
+  studentName: string;
+  userId?: string; 
+}
+
 const History = () => {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<HistoryFilters>({
     startDate: '',
     endDate: '',
     folio: '',
     category: '',
     studentName: ''
   });
-  const [selectedForPrint, setSelectedMonthForPrint] = useState<any>(null); // Misleading name, but sticking to logic
+  const [cajeros, setCajeros] = useState<any[]>([]);
+  const [selectedForPrint, setSelectedMonthForPrint] = useState<any>(null);
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
 
   const fetchReceipts = async () => {
     const res = await getReceipts(filters);
     setReceipts(res.data);
   };
+  
+  const fetchCajeros = async () => {
+    try {
+      const res = await getUsers(); 
+      setCajeros(res.data);
+    } catch (error) {
+      console.error("Failed to fetch users", error);
+    }
+  };
+
+  useEffect(() => {
+    if (user.role === 'admin' || user.role === 'contador') {
+      fetchCajeros();
+    }
+  }, [user.role]);
 
   useEffect(() => {
     fetchReceipts();
@@ -116,8 +141,8 @@ const History = () => {
           {(user.role === 'admin' || user.role === 'contador') && (
             <select onChange={(e) => setFilters({...filters, userId: e.target.value})}>
               <option value="">Todos los Cajeros</option>
-              {cajeros.map((u: any) => (
-                <option key={u.id} value={u.id}>{u.name}</option>
+              {cajeros.map((c: any) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           )}
