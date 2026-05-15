@@ -88,21 +88,6 @@ const History = () => {
     }, 100);
   };
 
-  const handleExport = () => {
-    const headers = ['Folio', 'Fecha', 'Cliente', 'Concepto', 'Categoria', 'Efectivo', 'QR', 'Total', 'Estado'];
-    const rows = receipts.map(r => [
-      r.folio, new Date(r.date).toLocaleDateString(), r.studentName || 'General',
-      r.concept, r.category, r.amount_cash, r.amount_qr, r.total_amount, r.status
-    ]);
-    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `reporte_contable_${filters.startDate || 'full'}.csv`);
-    document.body.appendChild(link);
-    link.click();
-  };
-
   const filteredTotals = React.useMemo(() => {
     return receipts.reduce((acc, r) => {
       if (r.status === 'active') {
