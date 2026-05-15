@@ -184,7 +184,17 @@ const History = () => {
           </thead>
           <tbody>
             {receipts.map(r => (
-              <tr key={r.id} style={{ borderBottom: '1px solid #e2e8f0', background: r.status === 'cancelled' ? '#fee2e2' : 'transparent' }}>
+              <tr 
+                key={r.id} 
+                style={{ 
+                  borderBottom: '1px solid #e2e8f0', 
+                  backgroundColor: r.status === 'cancelled' 
+                    ? '#fee2e2' // Cancelled row color
+                    : r.category.includes('Ingreso') 
+                      ? '#f0fdf4' // Income row color
+                      : '#f8fafc' // Expense or neutral row color
+                }}
+              >
                 <td style={{ padding: '0.75rem' }}>{r.folio}</td>
                 <td>{new Date(r.date).toLocaleDateString()}</td>
                 <td>{r.studentName || 'General'}</td>
