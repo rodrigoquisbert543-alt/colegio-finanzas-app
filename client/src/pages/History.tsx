@@ -242,11 +242,3 @@ const History = () => {
 };
 
 export default History;
-forme</div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default History;
