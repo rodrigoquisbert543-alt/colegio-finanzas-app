@@ -21,28 +21,35 @@ const Dashboard = () => {
     }
   }, []);
 
-  // Lógica de cálculo en el frontend
+  // Lógica de cálculo en el frontend, robusta y a prueba de fallos
   useEffect(() => {
-    getReceipts(filters).then(res => {
-      const receipts: Receipt[] = res.data;
-      const newTotals = receipts.reduce((acc, r) => {
-        if (r.status !== 'active') return acc;
+    getReceipts(filters)
+      .then(res => {
+        // Asegurarnos de que receipts sea siempre un array
+        const receipts: Receipt[] = res.data || []; 
+        
+        const newTotals = receipts.reduce((acc, r) => {
+          if (r.status !== 'active') return acc;
 
-        if (r.category.includes('Ingreso')) {
-          acc.income_total += r.total_amount;
-          acc.cash_balance += r.amount_cash;
-          acc.qr_balance += r.amount_qr;
-        } else if (r.category.includes('Egreso')) {
-          acc.expense_total += r.total_amount;
-          // Asumimos que los egresos también pueden ser en efectivo o QR
-          acc.cash_balance -= r.amount_cash;
-          acc.qr_balance -= r.amount_qr;
-        }
-        return acc;
-      }, { income_total: 0, expense_total: 0, cash_balance: 0, qr_balance: 0 });
-      
-      setStats(newTotals);
-    });
+          if (r.category.includes('Ingreso')) {
+            acc.income_total += r.total_amount;
+            acc.cash_balance += r.amount_cash;
+            acc.qr_balance += r.amount_qr;
+          } else if (r.category.includes('Egreso')) {
+            acc.expense_total += r.total_amount;
+            acc.cash_balance -= r.amount_cash;
+            acc.qr_balance -= r.amount_qr;
+          }
+          return acc;
+        }, { income_total: 0, expense_total: 0, cash_balance: 0, qr_balance: 0 });
+        
+        setStats(newTotals);
+      })
+      .catch(error => {
+        console.error("Error al obtener recibos para el dashboard:", error);
+        // En caso de error, mantener los stats en cero para evitar mostrar datos incorrectos
+        setStats({ income_total: 0, expense_total: 0, cash_balance: 0, qr_balance: 0 });
+      });
   }, [filters]);
 
   const totalArqueo = Object.entries(cashArqueo).reduce((acc, [deno, cant]) => acc + (Number(deno) * cant), 0);
