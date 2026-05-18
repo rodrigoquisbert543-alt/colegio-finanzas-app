@@ -61,6 +61,13 @@ const Dashboard = () => {
             style={{ marginBottom: 0, width: 'auto' }} 
             onChange={(e) => setFilters({ ...filters, endDate: e.target.value })} 
           />
+          <button 
+            onClick={() => setFilters({ ...filters, startDate: '', endDate: '' })}
+            style={{ padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.25rem', cursor: 'pointer', background: '#f1f5f9' }}
+            title="Limpiar filtros de fecha para ver el historial completo"
+          >
+            Ver Historial Completo
+          </button>
         </div>
       </div>
 
