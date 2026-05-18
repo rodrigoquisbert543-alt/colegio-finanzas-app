@@ -28,19 +28,11 @@ const History = () => {
 
   const fetchAllData = async () => {
     try {
-      const [receiptsRes, totalsRes] = await Promise.all([
-        getReceipts(filters),
-        getStats(filters)
-      ]);
+      const receiptsRes = await getReceipts(filters);
       setReceipts(receiptsRes.data);
-      setFilteredTotals({
-        income: totalsRes.data.income_total || 0,
-        expense: totalsRes.data.expense_total || 0,
-        income_cash: totalsRes.data.income_cash_total || 0,
-        income_qr: totalsRes.data.income_qr_total || 0,
-      });
     } catch (error) {
       console.error("Failed to fetch data", error);
+      setReceipts([]); // En caso de error, limpiar la lista.
     }
   };
   
@@ -57,12 +49,29 @@ const History = () => {
     if (user.role === 'admin' || user.role === 'contador') {
       fetchCajeros();
     }
-    fetchAllData(); // Fetch initial data
-  }, []);
+  }, []); // Cargar cajeros solo una vez
 
   useEffect(() => {
     fetchAllData();
   }, [filters]);
+
+  // Novedad: Calcular totales desde la lista de recibos del frontend
+  useEffect(() => {
+    const totals = receipts.reduce((acc, r) => {
+      if (r.status !== 'active') return acc; // Ignorar anulados
+
+      if (r.category.includes('Ingreso')) {
+        acc.income += r.total_amount;
+        acc.income_cash += r.amount_cash;
+        acc.income_qr += r.amount_qr;
+      } else if (r.category.includes('Egreso')) {
+        acc.expense += r.total_amount;
+      }
+      return acc;
+    }, { income: 0, expense: 0, income_cash: 0, income_qr: 0 });
+    
+    setFilteredTotals(totals);
+  }, [receipts]); // Recalcular cada vez que la lista de recibos cambie
 
   const handleCancel = async (id: number) => {
     const reason = prompt('Motivo de la anulación:');
