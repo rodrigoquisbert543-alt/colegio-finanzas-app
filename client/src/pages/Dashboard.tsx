@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { getStats, getUsers } from '../api';
+import { getReceipts, getUsers } from '../api'; // Cambiado: ya no se usa getStats
+import { Receipt } from '../types'; // Importar el tipo Receipt
 
 const Dashboard = () => {
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   const [stats, setStats] = useState({ income_total: 0, expense_total: 0, cash_balance: 0, qr_balance: 0 });
   const [filters, setFilters] = useState({ 
-    startDate: new Date().toISOString().split('T')[0], 
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: '', // Iniciar sin filtro de fecha
+    endDate: '',   // Iniciar sin filtro de fecha
     userId: user.role !== 'admin' && user.role !== 'contador' ? user.id : ''
   });
   const [cashiers, setCashiers] = useState<any[]>([]);
@@ -20,8 +21,28 @@ const Dashboard = () => {
     }
   }, []);
 
+  // Lógica de cálculo en el frontend
   useEffect(() => {
-    getStats(filters).then(res => setStats(res.data));
+    getReceipts(filters).then(res => {
+      const receipts: Receipt[] = res.data;
+      const newTotals = receipts.reduce((acc, r) => {
+        if (r.status !== 'active') return acc;
+
+        if (r.category.includes('Ingreso')) {
+          acc.income_total += r.total_amount;
+          acc.cash_balance += r.amount_cash;
+          acc.qr_balance += r.amount_qr;
+        } else if (r.category.includes('Egreso')) {
+          acc.expense_total += r.total_amount;
+          // Asumimos que los egresos también pueden ser en efectivo o QR
+          acc.cash_balance -= r.amount_cash;
+          acc.qr_balance -= r.amount_qr;
+        }
+        return acc;
+      }, { income_total: 0, expense_total: 0, cash_balance: 0, qr_balance: 0 });
+      
+      setStats(newTotals);
+    });
   }, [filters]);
 
   const totalArqueo = Object.entries(cashArqueo).reduce((acc, [deno, cant]) => acc + (Number(deno) * cant), 0);
