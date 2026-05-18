@@ -36,6 +36,8 @@ const History = () => {
       setFilteredTotals({
         income: totalsRes.data.income_total || 0,
         expense: totalsRes.data.expense_total || 0,
+        income_cash: totalsRes.data.income_cash_total || 0,
+        income_qr: totalsRes.data.income_qr_total || 0,
       });
     } catch (error) {
       console.error("Failed to fetch data", error);
