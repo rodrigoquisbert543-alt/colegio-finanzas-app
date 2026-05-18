@@ -23,7 +23,7 @@ const History = () => {
   });
   const [cajeros, setCajeros] = useState<any[]>([]);
   const [selectedForPrint, setSelectedForPrint] = useState<any>(null);
-  const [filteredTotals, setFilteredTotals] = useState({ income: 0, expense: 0 });
+  const [filteredTotals, setFilteredTotals] = useState({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
 
   const fetchAllData = async () => {
@@ -152,10 +152,20 @@ const History = () => {
           )}
         </div>
 
-        <div className="summary-box">
+        <div className="summary-box" style={{ flexDirection: 'column', gap: '0.5rem' }}>
           <div className="summary-item income">
             <strong>Total Ingresos (Filtro):</strong>
             <span>Bs. {filteredTotals.income.toFixed(2)}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', paddingLeft: '1rem' }}>
+            <div className="summary-item" style={{ background: '#ecfdf5', fontSize: '0.9rem', flex: 1 }}>
+              <strong>↳ en Efectivo:</strong>
+              <span>Bs. {filteredTotals.income_cash.toFixed(2)}</span>
+            </div>
+            <div className="summary-item" style={{ background: '#f5f3ff', fontSize: '0.9rem', flex: 1 }}>
+              <strong>↳ en QR/Banco:</strong>
+              <span>Bs. {filteredTotals.income_qr.toFixed(2)}</span>
+            </div>
           </div>
           <div className="summary-item expense">
             <strong>Total Egresos (Filtro):</strong>
@@ -225,6 +235,14 @@ const History = () => {
           <p style={{ textAlign: 'center' }}>Emitido por: {selectedForPrint.issuer}</p>
           <p style={{ textAlign: 'center', fontSize: '10px' }}>Documento de Control Interno</p>
           <div className="receipt-signature">Recibí Conforme</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default History;
+forme</div>
         </div>
       )}
     </div>

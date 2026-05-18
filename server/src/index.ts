@@ -195,7 +195,7 @@ async function startServer() {
   });
 
   app.get('/api/stats', authenticateToken, async (req: any, res: Response) => {
-    const { startDate, endDate, userId: queryUserId } = req.query;
+    const { startDate, endDate, userId: queryUserId, category } = req.query; // Added category
     const { id: currentUserId, role } = req.user;
 
     let targetUserId = queryUserId;
@@ -207,10 +207,12 @@ async function startServer() {
       SELECT 
         SUM(CASE WHEN status = 'active' AND category LIKE 'Ingreso%' THEN total_amount ELSE 0 END) as income_total,
         SUM(CASE WHEN status = 'active' AND category LIKE 'Egreso%' THEN total_amount ELSE 0 END) as expense_total,
-        SUM(CASE WHEN status = 'active' AND category LIKE 'Ingreso%' THEN amount_cash ELSE 0 END) - 
-        SUM(CASE WHEN status = 'active' AND category LIKE 'Egreso%' THEN amount_cash ELSE 0 END) as cash_balance,
-        SUM(CASE WHEN status = 'active' AND category LIKE 'Ingreso%' THEN amount_qr ELSE 0 END) -
-        SUM(CASE WHEN status = 'active' AND category LIKE 'Egreso%' THEN amount_qr ELSE 0 END) as qr_balance
+        
+        SUM(CASE WHEN status = 'active' AND category LIKE 'Ingreso%' THEN amount_cash ELSE 0 END) as income_cash_total,
+        SUM(CASE WHEN status = 'active' AND category LIKE 'Ingreso%' THEN amount_qr ELSE 0 END) as income_qr_total,
+
+        SUM(CASE WHEN status = 'active' AND category LIKE 'Egreso%' THEN amount_cash ELSE 0 END) as expense_cash_total,
+        SUM(CASE WHEN status = 'active' AND category LIKE 'Egreso%' THEN amount_qr ELSE 0 END) as expense_qr_total
       FROM receipts
       WHERE 1=1
     `;
@@ -219,13 +221,12 @@ async function startServer() {
     if (startDate) { params.push(startDate); query += ` AND date >= $${params.length}`; }
     if (endDate) { params.push(endDate + ' 23:59:59'); query += ` AND date <= $${params.length}`; }
     if (targetUserId) { params.push(targetUserId); query += ` AND user_id = $${params.length}`; }
+    
     if (category) {
-      if ((category as string).includes(',')) {
-        params.push((category as string).split(','));
+      const categories = (category as string).split(',');
+      if (categories.length > 0) {
+        params.push(categories);
         query += ` AND category = ANY($${params.length})`;
-      } else {
-        params.push(category);
-        query += ` AND category = $${params.length}`;
       }
     }
 
