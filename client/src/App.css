@@ -235,6 +235,7 @@ label {
 .table-responsive {
   width: 100%;
   overflow-x: auto;
+  margin-bottom: 1rem;
 }
 
 table {
@@ -262,9 +263,33 @@ tbody tr:hover {
 
 .summary-box {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.summary-item {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  min-height: 110px;
+}
+
+.summary-item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.summary-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
 }
 
 .summary-item {
@@ -327,8 +352,9 @@ tbody tr:hover {
   #printable-receipt {
     position: absolute;
     top: 0;
-    left: 0;
-    width: 80mm;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 72mm;
     margin: 0;
     padding: 5mm;
     font-family: Arial, sans-serif;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { getReceipts, cancelReceipt, getUsers } from '../api';
+import { getReceipts, cancelReceipt, getUsers, getStats } from '../api';
 import { Receipt } from '../types';
-import { Search, XCircle, Printer } from 'lucide-react';
+import { XCircle, Printer } from 'lucide-react';
 
 interface HistoryFilters {
   startDate: string;
@@ -21,6 +21,7 @@ const History = () => {
     category: '',
     studentName: '',
   });
+  const [categoryValues, setCategoryValues] = useState<string[]>([]);
   const [cajeros, setCajeros] = useState<any[]>([]);
   const [selectedForPrint, setSelectedForPrint] = useState<any>(null);
   const [filteredTotals, setFilteredTotals] = useState({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
@@ -36,6 +37,21 @@ const History = () => {
     }
   };
   
+  const fetchFilteredTotals = async () => {
+    try {
+      const totalsRes = await getStats(filters);
+      setFilteredTotals({
+        income: Number(totalsRes.data.income_total || 0),
+        expense: Number(totalsRes.data.expense_total || 0),
+        income_cash: Number(totalsRes.data.income_cash_total || 0),
+        income_qr: Number(totalsRes.data.income_qr_total || 0),
+      });
+    } catch (error) {
+      console.error("Failed to fetch totals", error);
+      setFilteredTotals({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
+    }
+  };
+
   const fetchCajeros = async () => {
     try {
       const res = await getUsers(); 
@@ -52,26 +68,15 @@ const History = () => {
   }, []); // Cargar cajeros solo una vez
 
   useEffect(() => {
-    fetchAllData();
-  }, [filters]);
+    setFilters(prev => ({ ...prev, category: categoryValues.join(',') }));
+  }, [categoryValues]);
 
-  // Novedad: Calcular totales desde la lista de recibos del frontend
   useEffect(() => {
-    const totals = receipts.reduce((acc, r) => {
-      if (r.status !== 'active') return acc; // Ignorar anulados
-
-      if (r.category.includes('Ingreso')) {
-        acc.income += r.total_amount;
-        acc.income_cash += r.amount_cash;
-        acc.income_qr += r.amount_qr;
-      } else if (r.category.includes('Egreso')) {
-        acc.expense += r.total_amount;
-      }
-      return acc;
-    }, { income: 0, expense: 0, income_cash: 0, income_qr: 0 });
-    
-    setFilteredTotals(totals);
-  }, [receipts]); // Recalcular cada vez que la lista de recibos cambie
+    const load = async () => {
+      await Promise.all([fetchAllData(), fetchFilteredTotals()]);
+    };
+    load();
+  }, [filters]);
 
   const handleCancel = async (id: number) => {
     const reason = prompt('Motivo de la anulación:');
@@ -82,6 +87,18 @@ const History = () => {
     } catch (err) {
       alert('Error al anular');
     }
+  };
+
+  const handleClearFilters = () => {
+    setCategoryValues([]);
+    setFilters({
+      startDate: '',
+      endDate: '',
+      folio: '',
+      category: '',
+      studentName: '',
+      userId: user.role !== 'admin' && user.role !== 'contador' ? user.id : '',
+    });
   };
 
   const handlePrint = (r: Receipt) => {
@@ -116,24 +133,30 @@ const History = () => {
   return (
     <div className="container">
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: '0.75rem' }}>
           <h2>Historial y Auditoría</h2>
-          <button onClick={handleExport} className="btn btn-primary" style={{ background: '#059669' }}>
-            Exportar Excel (CSV)
-          </button>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button onClick={handleClearFilters} className="btn" style={{ background: '#94a3b8', color: '#fff' }}>
+              Limpiar filtros
+            </button>
+            <button onClick={handleExport} className="btn btn-primary" style={{ background: '#059669' }}>
+              Exportar Excel (CSV)
+            </button>
+          </div>
         </div>
         
         <div className="dashboard-grid" style={{ marginBottom: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
-          <input type="text" placeholder="Buscar por Cliente..." onChange={(e) => setFilters({...filters, studentName: e.target.value})} />
-          <input type="text" placeholder="Nro de Comprobante" onChange={(e) => setFilters({...filters, folio: e.target.value})} />
+          <input type="text" value={filters.studentName} placeholder="Buscar por Cliente..." onChange={(e) => setFilters({...filters, studentName: e.target.value})} />
+          <input type="text" value={filters.folio} placeholder="Nro de Comprobante" onChange={(e) => setFilters({...filters, folio: e.target.value})} />
           <select 
             multiple
+            value={categoryValues}
             onChange={(e) => {
-              const selected = Array.from(e.target.selectedOptions, option => option.value).join(',');
-              setFilters({...filters, category: selected});
+              const selected = Array.from(e.target.selectedOptions, option => option.value);
+              setCategoryValues(selected);
             }}
-            title="Selección múltiple con Ctrl/Cmd"
-            style={{ height: '100px' }}
+            title="Selecciona varias categorías con Ctrl/Cmd o con el toque en dispositivos móviles"
+            style={{ minHeight: '140px' }}
           >
             <optgroup label="INGRESOS">
               <option value="Ingreso: Inscripción a campamentos">Inscripción a campamentos</option>
@@ -148,11 +171,11 @@ const History = () => {
               <option value="Egreso: Otros Egresos">Otros Egresos</option>
             </optgroup>
           </select>
-          <input type="date" title="Desde" onChange={(e) => setFilters({...filters, startDate: e.target.value})} />
-          <input type="date" title="Hasta" onChange={(e) => setFilters({...filters, endDate: e.target.value})} />
+          <input type="date" title="Desde" value={filters.startDate} onChange={(e) => setFilters({...filters, startDate: e.target.value})} />
+          <input type="date" title="Hasta" value={filters.endDate} onChange={(e) => setFilters({...filters, endDate: e.target.value})} />
 
           {(user.role === 'admin' || user.role === 'contador') && (
-            <select onChange={(e) => setFilters({...filters, userId: e.target.value})}>
+            <select value={filters.userId || ''} onChange={(e) => setFilters({...filters, userId: e.target.value})}>
               <option value="">Todos los Cajeros</option>
               {cajeros.map((c: any) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -161,28 +184,39 @@ const History = () => {
           )}
         </div>
 
-        <div className="summary-box" style={{ flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="summary-box">
           <div className="summary-item income">
-            <strong>Total Ingresos (Filtro):</strong>
+            <div>
+              <strong>Total Ingresos (filtro)</strong>
+              <p className="summary-note">Solo comprobantes activos</p>
+            </div>
             <span>Bs. {filteredTotals.income.toFixed(2)}</span>
           </div>
-          <div style={{ display: 'flex', gap: '1rem', paddingLeft: '1rem' }}>
-            <div className="summary-item" style={{ background: '#ecfdf5', fontSize: '0.9rem', flex: 1 }}>
-              <strong>↳ en Efectivo:</strong>
-              <span>Bs. {filteredTotals.income_cash.toFixed(2)}</span>
+          <div className="summary-item" style={{ background: '#ecfdf5' }}>
+            <div>
+              <strong>Ingresos en Efectivo</strong>
+              <p className="summary-note">Movimiento de caja</p>
             </div>
-            <div className="summary-item" style={{ background: '#f5f3ff', fontSize: '0.9rem', flex: 1 }}>
-              <strong>↳ en QR/Banco:</strong>
-              <span>Bs. {filteredTotals.income_qr.toFixed(2)}</span>
+            <span>Bs. {filteredTotals.income_cash.toFixed(2)}</span>
+          </div>
+          <div className="summary-item" style={{ background: '#f5f3ff' }}>
+            <div>
+              <strong>Ingresos QR/Banco</strong>
+              <p className="summary-note">Transferencias y pagos digitales</p>
             </div>
+            <span>Bs. {filteredTotals.income_qr.toFixed(2)}</span>
           </div>
           <div className="summary-item expense">
-            <strong>Total Egresos (Filtro):</strong>
+            <div>
+              <strong>Total Egresos (filtro)</strong>
+              <p className="summary-note">Solo comprobantes activos</p>
+            </div>
             <span>Bs. {filteredTotals.expense.toFixed(2)}</span>
           </div>
         </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="table-responsive">
+          <table>
           <thead>
             <tr style={{ textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>
               <th>Folio</th><th>Fecha</th><th>Cliente / Alumno</th><th>Concepto</th>
@@ -221,6 +255,7 @@ const History = () => {
           </tbody>
         </table>
       </div>
+    </div>
 
       {selectedForPrint && (
         <div id="printable-receipt">

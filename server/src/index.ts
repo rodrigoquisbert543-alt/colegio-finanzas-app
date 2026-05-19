@@ -199,7 +199,7 @@ async function startServer() {
   });
 
   app.get('/api/stats', authenticateToken, async (req: any, res: Response) => {
-    const { startDate, endDate, userId: queryUserId, category } = req.query; // Added category
+    const { startDate, endDate, userId: queryUserId, category, folio, studentName } = req.query;
     const { id: currentUserId, role } = req.user;
 
     let targetUserId = queryUserId;
@@ -217,20 +217,26 @@ async function startServer() {
 
         SUM(CASE WHEN status = 'active' AND category LIKE 'Egreso%' THEN amount_cash ELSE 0 END) as expense_cash_total,
         SUM(CASE WHEN status = 'active' AND category LIKE 'Egreso%' THEN amount_qr ELSE 0 END) as expense_qr_total
-      FROM receipts
+      FROM receipts r
+      LEFT JOIN students s ON r.student_id = s.id
       WHERE 1=1
     `;
     const params: any[] = [];
 
-    if (startDate) { params.push(startDate); query += ` AND date >= $${params.length}`; }
-    if (endDate) { params.push(endDate + ' 23:59:59'); query += ` AND date <= $${params.length}`; }
-    if (targetUserId) { params.push(targetUserId); query += ` AND user_id = $${params.length}`; }
+    if (startDate) { params.push(startDate); query += ` AND r.date >= $${params.length}`; }
+    if (endDate) { params.push(endDate + ' 23:59:59'); query += ` AND r.date <= $${params.length}`; }
+    if (targetUserId) { params.push(targetUserId); query += ` AND r.user_id = $${params.length}`; }
+    if (folio) { params.push(`%${folio}%`); query += ` AND r.folio LIKE $${params.length}`; }
+    if (studentName) { 
+      params.push(`%${studentName}%`);
+      query += ` AND (s.name LIKE $${params.length} OR r.client_name LIKE $${params.length})`; 
+    }
     
     if (category) {
       const categories = (category as string).split(',');
       if (categories.length > 0) {
         params.push(categories);
-        query += ` AND category = ANY($${params.length})`;
+        query += ` AND r.category = ANY($${params.length})`;
       }
     }
 
