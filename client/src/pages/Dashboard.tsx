@@ -57,82 +57,95 @@ const Dashboard = () => {
 
   return (
     <div className="container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div className="page-header">
         <div>
           <h2>Panel de Control y Arqueo</h2>
-          <p style={{ color: 'var(--secondary)', fontSize: '0.9rem' }}>
+          <p className="page-subtitle">
             {filters.userId ? `Caja de: ${cashiers.find(c => c.id.toString() === filters.userId.toString())?.name || user.name}` : 'Consolidado General (Todas las Cajas)'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+      </div>
+
+      <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.8rem', alignItems: 'end' }}>
           {(user.role === 'admin' || user.role === 'contador') && (
-            <select 
-              value={filters.userId} 
-              onChange={(e) => setFilters({ ...filters, userId: e.target.value })}
-              style={{ marginBottom: 0, width: 'auto', background: '#e2e8f0' }}
-            >
-              <option value="">Todas las Cajas</option>
-              {cashiers.map(c => (
-                <option key={c.id} value={c.id}>{c.name} ({c.role})</option>
-              ))}
-            </select>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ fontWeight: '600', fontSize: '0.9rem' }}>Cajero</label>
+              <select 
+                value={filters.userId} 
+                onChange={(e) => setFilters({ ...filters, userId: e.target.value })}
+                style={{ marginBottom: 0, padding: '0.6rem', borderRadius: '0.5rem', border: '1px solid var(--border)' }}
+              >
+                <option value="">Todas las Cajas</option>
+                {cashiers.map(c => (
+                  <option key={c.id} value={c.id}>{c.name} ({c.role})</option>
+                ))}
+              </select>
+            </div>
           )}
-          <input 
-            type="date" 
-            value={filters.startDate}
-            style={{ marginBottom: 0, width: 'auto' }} 
-            onChange={(e) => setFilters({ ...filters, startDate: e.target.value })} 
-          />
-          <input 
-            type="date" 
-            value={filters.endDate}
-            style={{ marginBottom: 0, width: 'auto' }} 
-            onChange={(e) => setFilters({ ...filters, endDate: e.target.value })} 
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontWeight: '600', fontSize: '0.9rem' }}>Desde</label>
+            <input 
+              type="date" 
+              value={filters.startDate}
+              style={{ marginBottom: 0, padding: '0.6rem', borderRadius: '0.5rem', border: '1px solid var(--border)' }} 
+              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })} 
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontWeight: '600', fontSize: '0.9rem' }}>Hasta</label>
+            <input 
+              type="date" 
+              value={filters.endDate}
+              style={{ marginBottom: 0, padding: '0.6rem', borderRadius: '0.5rem', border: '1px solid var(--border)' }} 
+              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })} 
+            />
+          </div>
           <button 
             onClick={() => setFilters({ ...filters, startDate: '', endDate: '' })}
-            style={{ padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.25rem', cursor: 'pointer', background: '#f1f5f9' }}
+            className="btn btn-primary"
+            style={{ margin: 0 }}
             title="Limpiar filtros de fecha para ver el historial completo"
           >
-            Ver Historial Completo
+            Limpiar Filtros
           </button>
         </div>
       </div>
 
       <div className="dashboard-grid">
         <div className="card" style={{ borderLeft: '5px solid var(--success)' }}>
-          <p style={{ color: 'var(--secondary)', marginBottom: '0.5rem' }}>Total Ingresos</p>
-          <h3 style={{ fontSize: '1.5rem', color: 'var(--success)' }}>+Bs. {Number(stats.income_total || 0).toFixed(2)}</h3>
+          <p style={{ color: 'var(--secondary)', marginBottom: '0.5rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Ingresos</p>
+          <h3 style={{ fontSize: '1.75rem', color: 'var(--success)', margin: '0.5rem 0 0 0' }}>+Bs. {Number(stats.income_total || 0).toFixed(2)}</h3>
         </div>
         <div className="card" style={{ borderLeft: '5px solid var(--danger)' }}>
-          <p style={{ color: 'var(--secondary)', marginBottom: '0.5rem' }}>Total Egresos</p>
-          <h3 style={{ fontSize: '1.5rem', color: 'var(--danger)' }}>-Bs. {Number(stats.expense_total || 0).toFixed(2)}</h3>
+          <p style={{ color: 'var(--secondary)', marginBottom: '0.5rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Egresos</p>
+          <h3 style={{ fontSize: '1.75rem', color: 'var(--danger)', margin: '0.5rem 0 0 0' }}>-Bs. {Number(stats.expense_total || 0).toFixed(2)}</h3>
         </div>
         <div className="card" style={{ borderLeft: '5px solid var(--primary)' }}>
-          <p style={{ color: 'var(--secondary)', marginBottom: '0.5rem' }}>Saldo en EFECTIVO</p>
-          <h3 style={{ fontSize: '1.5rem' }}>Bs. {Number(stats.cash_balance || 0).toFixed(2)}</h3>
-          <small style={{ color: 'var(--secondary)' }}>Sujeto a arqueo físico</small>
+          <p style={{ color: 'var(--secondary)', marginBottom: '0.5rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Saldo en EFECTIVO</p>
+          <h3 style={{ fontSize: '1.75rem', margin: '0.5rem 0 0 0' }}>Bs. {Number(stats.cash_balance || 0).toFixed(2)}</h3>
+          <small style={{ color: 'var(--secondary)', fontSize: '0.8rem', display: 'block', marginTop: '0.5rem' }}>Sujeto a arqueo físico</small>
         </div>
         <div className="card" style={{ borderLeft: '5px solid #8b5cf6' }}>
-          <p style={{ color: 'var(--secondary)', marginBottom: '0.5rem' }}>Saldo BANCOS / QR</p>
-          <h3 style={{ fontSize: '1.5rem' }}>Bs. {Number(stats.qr_balance || 0).toFixed(2)}</h3>
-          <small style={{ color: 'var(--secondary)' }}>No afecta saldo en caja física</small>
+          <p style={{ color: 'var(--secondary)', marginBottom: '0.5rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Saldo BANCOS / QR</p>
+          <h3 style={{ fontSize: '1.75rem', color: '#8b5cf6', margin: '0.5rem 0 0 0' }}>Bs. {Number(stats.qr_balance || 0).toFixed(2)}</h3>
+          <small style={{ color: 'var(--secondary)', fontSize: '0.8rem', display: 'block', marginTop: '0.5rem' }}>No afecta saldo en caja física</small>
         </div>
       </div>
 
-      <div className="grid-2-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem', marginTop: '1.5rem' }}>
         <div className="card">
-          <h3>Arqueo de Efectivo Físico</h3>
-          <p style={{ fontSize: '0.875rem', color: 'var(--secondary)', marginBottom: '1rem' }}>Desglose para conciliación de caja</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+          <h3 style={{ marginTop: 0 }}>Arqueo de Efectivo Físico</h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--secondary)', marginBottom: '1.25rem' }}>Desglose para conciliación de caja</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             {Object.keys(cashArqueo).sort((a,b) => Number(b)-Number(a)).map(deno => (
               <div key={deno} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ minWidth: '60px' }}>{deno} Bs:</span>
+                <label style={{ minWidth: '70px', fontSize: '0.9rem', fontWeight: '500' }}>{deno} Bs:</label>
                 <input 
                   type="number" 
                   value={cashArqueo[deno]} 
                   onChange={(e) => setCashArqueo({ ...cashArqueo, [deno]: Number(e.target.value) })}
-                  style={{ marginBottom: 0, padding: '4px' }}
+                  style={{ marginBottom: 0, padding: '0.5rem', fontSize: '0.9rem' }}
                   min="0"
                 />
               </div>
@@ -140,27 +153,37 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-          <h3>Conciliación de Caja</h3>
-          <div style={{ margin: '1.5rem 0' }}>
-            <p>Efectivo Físico (Contado): <strong style={{ fontSize: '1.25rem' }}>Bs. {totalArqueo.toFixed(2)}</strong></p>
-            <p>Saldo Teórico (Sistema): <strong>Bs. {(stats.cash_balance || 0).toFixed(2)}</strong></p>
-          </div>
-          <div style={{ 
-            padding: '1rem', 
-            borderRadius: '0.5rem', 
-            width: '100%',
-            background: Math.abs(difference) < 0.01 ? '#dcfce7' : difference > 0 ? '#dbeafe' : '#fee2e2',
-            color: Math.abs(difference) < 0.01 ? '#166534' : difference > 0 ? '#1e40af' : '#991b1b'
-          }}>
-            <p style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-              {Math.abs(difference) < 0.01 ? 'CAJA CUADRADA' : difference > 0 ? `SOBRANTE: Bs. ${difference.toFixed(2)}` : `FALTANTE: Bs. ${Math.abs(difference).toFixed(2)}`}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1.25rem' }}>
+          <div>
+            <h3 style={{ margin: '0 0 1rem 0', textAlign: 'center' }}>Conciliación de Caja</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
+                <span style={{ fontWeight: '500' }}>Efectivo Físico:</span>
+                <strong style={{ fontSize: '1.1rem' }}>Bs. {totalArqueo.toFixed(2)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
+                <span style={{ fontWeight: '500' }}>Saldo Teórico:</span>
+                <strong style={{ fontSize: '1.1rem' }}>Bs. {(stats.cash_balance || 0).toFixed(2)}</strong>
+              </div>
+            </div>
+            <div style={{ 
+              padding: '1rem', 
+              borderRadius: '0.75rem', 
+              width: '100%',
+              textAlign: 'center',
+              background: Math.abs(difference) < 0.01 ? '#dcfce7' : difference > 0 ? '#dbeafe' : '#fee2e2',
+              color: Math.abs(difference) < 0.01 ? '#166534' : difference > 0 ? '#1e40af' : '#991b1b',
+              fontWeight: 'bold'
+            }}>
+              <p style={{ margin: 0, fontSize: '1.2rem' }}>
+                {Math.abs(difference) < 0.01 ? '✓ CAJA CUADRADA' : difference > 0 ? `SOBRANTE: +Bs. ${difference.toFixed(2)}` : `FALTANTE: -Bs. ${Math.abs(difference).toFixed(2)}`}
+              </p>
+            </div>
+            <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--secondary)', textAlign: 'center' }}>
+              QR/Bancos: Bs. {Number(stats.qr_balance || 0).toFixed(2)} (excluido del arqueo)
             </p>
           </div>
-          <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'var(--secondary)' }}>
-            Nota: Los ingresos por QR (Bs. {Number(stats.qr_balance || 0).toFixed(2)}) ya han sido excluidos de este arqueo.
-          </p>
-          <button className="btn btn-primary" style={{ marginTop: '1.5rem', width: '100%' }} onClick={() => window.print()}>
+          <button className="btn btn-primary" style={{ marginTop: 0 }} onClick={() => window.print()}>
             Imprimir Acta de Arqueo
           </button>
         </div>
