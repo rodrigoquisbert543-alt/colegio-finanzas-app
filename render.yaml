@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: colegio-finanzas-api
+    env: node
+    plan: free
+    branch: main
+    buildCommand: cd server && npm install && npm run build
+    startCommand: cd server && npm run start
+    rootDir: .
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: PORT
+        value: "4000"
+
+  - type: static_site
+    name: colegio-finanzas-web
+    env: static
+    plan: free
+    branch: main
+    buildCommand: cd client && npm install && npm run build
+    publishPath: client/dist
+    rootDir: .
+    envVars:
+      - key: VITE_API_URL
+        sync: false

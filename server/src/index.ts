@@ -14,6 +14,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'production_secret_key';
 app.use(cors());
 app.use(express.json());
 
+app.get('/api/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok' });
+});
+
 // Auth Middleware
 export const authenticateToken = (req: any, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];

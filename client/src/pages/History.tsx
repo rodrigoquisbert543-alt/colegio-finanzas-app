@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getReceipts, cancelReceipt, getUsers, getStats } from '../api';
+import { getReceipts, cancelReceipt, getUsers } from '../api';
 import { Receipt } from '../types';
 import { Search, XCircle, Printer } from 'lucide-react';
 
