@@ -4,6 +4,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required to start the server. Set it in Render environment variables.');
+}
+
 // Using Pool for PostgreSQL instead of sqlite open
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

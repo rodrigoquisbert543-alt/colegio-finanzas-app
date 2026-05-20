@@ -34,7 +34,13 @@ export const authenticateToken = (req: any, res: Response, next: NextFunction) =
 };
 
 async function startServer() {
-  const pool = await initDb();
+  let pool;
+  try {
+    pool = await initDb();
+  } catch (error) {
+    console.error('Failed to initialize database connection:', error);
+    process.exit(1);
+  }
 
   // Login Route
   app.post('/api/login', async (req: Request, res: Response) => {
