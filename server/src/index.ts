@@ -3,6 +3,7 @@ import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
+import path from 'path';
 import { initDb } from './db';
 
 dotenv.config();
@@ -260,6 +261,13 @@ async function startServer() {
   app.get('/api/users', authenticateToken, async (req: Request, res: Response) => {
     const resDb = await pool.query('SELECT id, username, name, role FROM users WHERE role IN (\'caja\', \'biblioteca\')');
     res.json(resDb.rows);
+  });
+
+  // Serve frontend static assets when deployed as a single app
+  const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
+  app.use(express.static(clientDistPath));
+  app.get('*', (_req: Request, res: Response) => {
+    res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 
   app.listen(PORT, () => {

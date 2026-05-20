@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: colegio-finanzas-api
+    name: colegio-finanzas-app
     env: node
     plan: free
     branch: main
-    buildCommand: cd server && npm install && npm run build
+    buildCommand: cd client && npm install && npm run build && cd ../server && npm install && npm run build
     startCommand: cd server && npm run start
     rootDir: .
     envVars:
@@ -14,15 +14,6 @@ services:
         sync: false
       - key: PORT
         value: "4000"
-
-  - type: static_site
-    name: colegio-finanzas-web
-    env: static
-    plan: free
-    branch: main
-    buildCommand: cd client && npm install && npm run build
-    publishPath: client/dist
-    rootDir: .
-    envVars:
       - key: VITE_API_URL
+        value: "/api"
         sync: false
