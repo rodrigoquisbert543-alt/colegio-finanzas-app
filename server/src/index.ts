@@ -269,12 +269,12 @@ async function startServer() {
     res.json(resDb.rows);
   });
 
-  // Serve frontend static assets when deployed as a single app
+// Serve frontend static assets when deployed as a single app
   const clientDistPath = path.join(__dirname, '..', '..', 'client', 'dist');
   app.use(express.static(clientDistPath));
   
-  // SOLUCIÓN: Cambiado '(*)' por '/:any*' para compatibilidad con versiones modernas
-  app.get('/:any*', (_req: Request, res: Response) => {
+  // SOLUCIÓN DEFINITIVA: El asterisco DEBE ir entre paréntesis (.*) para que no rompa Express v5
+  app.get('/:any(.*)', (_req: Request, res: Response) => {
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 
