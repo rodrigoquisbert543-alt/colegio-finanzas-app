@@ -1,0 +1,12 @@
+{
+  "name": "colegio-finanzas-app-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd client && npm install && npm run build && cd ../server && npm install && npm run build",
+    "start": "cd server && npm run start"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
