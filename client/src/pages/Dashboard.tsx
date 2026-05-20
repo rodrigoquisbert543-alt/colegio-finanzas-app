@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { getReceipts, getUsers } from '../api'; // Cambiado: ya no se usa getStats
-import { Receipt } from '../types'; // Importar el tipo Receipt
+import { getStats, getUsers } from '../api';
 
 const Dashboard = () => {
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   const [stats, setStats] = useState({ income_total: 0, expense_total: 0, cash_balance: 0, qr_balance: 0 });
   const [filters, setFilters] = useState({ 
-    startDate: '', // Iniciar sin filtro de fecha
-    endDate: '',   // Iniciar sin filtro de fecha
+    startDate: '',
+    endDate: '',
     userId: user.role !== 'admin' && user.role !== 'contador' ? user.id : ''
   });
   const [cashiers, setCashiers] = useState<any[]>([]);
@@ -21,33 +20,18 @@ const Dashboard = () => {
     }
   }, []);
 
-  // Lógica de cálculo en el frontend, robusta y a prueba de fallos
   useEffect(() => {
-    getReceipts(filters)
+    getStats(filters)
       .then(res => {
-        // Asegurarnos de que receipts sea siempre un array
-        const receipts: Receipt[] = res.data || []; 
-        
-        const newTotals = receipts.reduce((acc, r) => {
-          if (r.status !== 'active') return acc;
-
-          if (r.category.includes('Ingreso')) {
-            acc.income_total += r.total_amount;
-            acc.cash_balance += r.amount_cash;
-            acc.qr_balance += r.amount_qr;
-          } else if (r.category.includes('Egreso')) {
-            acc.expense_total += r.total_amount;
-            acc.cash_balance -= r.amount_cash;
-            acc.qr_balance -= r.amount_qr;
-          }
-          return acc;
-        }, { income_total: 0, expense_total: 0, cash_balance: 0, qr_balance: 0 });
-        
-        setStats(newTotals);
+        setStats({
+          income_total: Number(res.data.income_total || 0),
+          expense_total: Number(res.data.expense_total || 0),
+          cash_balance: Number(res.data.income_cash_total || 0) - Number(res.data.expense_cash_total || 0),
+          qr_balance: Number(res.data.income_qr_total || 0) - Number(res.data.expense_qr_total || 0),
+        });
       })
       .catch(error => {
-        console.error("Error al obtener recibos para el dashboard:", error);
-        // En caso de error, mantener los stats en cero para evitar mostrar datos incorrectos
+        console.error('Error al obtener estadísticas para el dashboard:', error);
         setStats({ income_total: 0, expense_total: 0, cash_balance: 0, qr_balance: 0 });
       });
   }, [filters]);

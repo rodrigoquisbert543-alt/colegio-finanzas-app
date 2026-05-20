@@ -99,8 +99,8 @@ async function startServer() {
 
   // Receipts API
   app.get('/api/receipts', authenticateToken, async (req: any, res: Response) => {
-    const { startDate, endDate, folio, studentId, category, studentName } = req.query;
-    const { id: userId, role } = req.user;
+    const { startDate, endDate, folio, studentId, category, studentName, userId: queryUserId } = req.query;
+    const { id: currentUserId, role } = req.user;
 
     let query = `
       SELECT r.*, u.name as "userName", COALESCE(r.client_name, s.name, 'Cliente General') as "studentName" 
@@ -111,9 +111,9 @@ async function startServer() {
     `;
     const params: any[] = [];
 
-    // Role-based filtering
+    // Role-based filtering for cashiers/library users
     if (role === 'biblioteca' || role === 'caja') {
-      params.push(userId);
+      params.push(currentUserId);
       query += ` AND r.user_id = $${params.length}`;
     }
 
@@ -121,17 +121,29 @@ async function startServer() {
     if (endDate) { params.push(endDate + ' 23:59:59'); query += ` AND r.date <= $${params.length}`; }
     if (folio) { params.push(`%${folio}%`); query += ` AND r.folio LIKE $${params.length}`; }
     if (studentId) { params.push(studentId); query += ` AND r.student_id = $${params.length}`; }
-    if (category) {
-      if ((category as string).includes(',')) {
-        params.push((category as string).split(','));
-        query += ` AND r.category = ANY($${params.length})`;
-      } else {
-        params.push(category);
-        query += ` AND r.category = $${params.length}`;
+
+    if (role === 'admin' || role === 'contador') {
+      const selectedUserId = queryUserId?.toString().trim();
+      if (selectedUserId) {
+        params.push(selectedUserId);
+        query += ` AND r.user_id = $${params.length}`;
       }
     }
+
+    if (category) {
+      const categoryList = (category as string).split(',').map((c) => c.trim()).filter(Boolean);
+      if (categoryList.length === 1) {
+        params.push(categoryList[0]);
+        query += ` AND r.category = $${params.length}`;
+      } else if (categoryList.length > 1) {
+        params.push(categoryList);
+        query += ` AND r.category = ANY($${params.length})`;
+      }
+    }
+
     if (studentName) { 
-      params.push(`%${studentName}%`);
+      const search = `%${(studentName as string).trim()}%`;
+      params.push(search);
       query += ` AND (s.name LIKE $${params.length} OR r.client_name LIKE $${params.length})`; 
     }
 
@@ -228,12 +240,13 @@ async function startServer() {
     if (targetUserId) { params.push(targetUserId); query += ` AND r.user_id = $${params.length}`; }
     if (folio) { params.push(`%${folio}%`); query += ` AND r.folio LIKE $${params.length}`; }
     if (studentName) { 
-      params.push(`%${studentName}%`);
+      const search = `%${(studentName as string).trim()}%`;
+      params.push(search);
       query += ` AND (s.name LIKE $${params.length} OR r.client_name LIKE $${params.length})`; 
     }
     
     if (category) {
-      const categories = (category as string).split(',');
+      const categories = (category as string).split(',').map((c) => c.trim()).filter(Boolean);
       if (categories.length > 0) {
         params.push(categories);
         query += ` AND r.category = ANY($${params.length})`;
