@@ -272,7 +272,9 @@ async function startServer() {
   // Serve frontend static assets when deployed as a single app
   const clientDistPath = path.join(__dirname, '..', '..', 'client', 'dist');
   app.use(express.static(clientDistPath));
-  app.get('*', (_req: Request, res: Response) => {
+  
+  // SOLUCIÓN: Cambiado '(*)' por '/:any*' para compatibilidad con versiones modernas
+  app.get('/:any*', (_req: Request, res: Response) => {
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 
