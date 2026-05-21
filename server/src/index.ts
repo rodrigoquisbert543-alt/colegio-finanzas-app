@@ -89,7 +89,7 @@ app.get('/api/students/last-receipt/:name', authenticateToken, async (req: Reque
   const resDb = await pool.query(`
     SELECT r.* FROM receipts r
     JOIN students s ON r.student_id = s.id
-    WHERE s.name = $1
+    WHERE s.name ILIKE $1
     ORDER BY r.date DESC
     LIMIT 1
   `, [name]);
@@ -101,6 +101,11 @@ app.post('/api/students', authenticateToken, async (req: any, res: Response) => 
   if (req.user.role !== 'admin') return res.status(403).json({ message: 'Solo administradores' });
   const { name, grade, monthly_fee } = req.body;
   try {
+    // Verificar si ya existe un estudiante con ese nombre (ignorar mayúsculas)
+    const existing = await pool.query('SELECT id FROM students WHERE name ILIKE $1', [name]);
+    if (existing.rowCount > 0) {
+      return res.status(400).json({ message: 'Ya existe un estudiante con este nombre' });
+    }
     await pool.query('INSERT INTO students (name, grade, monthly_fee) VALUES ($1, $2, $3)', [name, grade, monthly_fee]);
     res.status(201).json({ message: 'Estudiante creado' });
   } catch (error) {
@@ -130,7 +135,7 @@ app.get('/api/receipts', authenticateToken, async (req: any, res: Response) => {
 
   if (startDate) { params.push(startDate); query += ` AND r.date >= $${params.length}`; }
   if (endDate) { params.push(endDate + ' 23:59:59'); query += ` AND r.date <= $${params.length}`; }
-  if (folio) { params.push(`%${folio}%`); query += ` AND r.folio LIKE $${params.length}`; }
+  if (folio) { params.push(`%${folio}%`); query += ` AND r.folio ILIKE $${params.length}`; }
   if (studentId) { params.push(studentId); query += ` AND r.student_id = $${params.length}`; }
 
   if (role === 'admin' || role === 'contador') {
@@ -155,7 +160,7 @@ app.get('/api/receipts', authenticateToken, async (req: any, res: Response) => {
   if (studentName) { 
     const search = `%${(studentName as string).trim()}%`;
     params.push(search);
-    query += ` AND (s.name LIKE $${params.length} OR r.client_name LIKE $${params.length})`; 
+    query += ` AND (s.name ILIKE $${params.length} OR r.client_name ILIKE $${params.length})`; 
   }
 
   query += ' ORDER BY r.date DESC';
@@ -177,7 +182,8 @@ app.post('/api/receipts', authenticateToken, async (req: any, res: Response) => 
     let final_student_id = student_id;
 
     if (!final_student_id && student_name) {
-      const existing = await pool.query('SELECT id FROM students WHERE name = $1', [student_name]);
+      // Búsqueda insensible a mayúsculas
+      const existing = await pool.query('SELECT id FROM students WHERE name ILIKE $1', [student_name]);
       if (existing.rowCount! > 0) {
         final_student_id = existing.rows[0].id;
       } else {
@@ -185,6 +191,7 @@ app.post('/api/receipts', authenticateToken, async (req: any, res: Response) => 
         final_student_id = result.rows[0].id;
       }
     }
+
 
     const date = new Date();
     const folio = `REC-${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
@@ -252,11 +259,11 @@ app.get('/api/stats', authenticateToken, async (req: any, res: Response) => {
   if (startDate) { params.push(startDate); query += ` AND r.date >= $${params.length}`; }
   if (endDate) { params.push(endDate + ' 23:59:59'); query += ` AND r.date <= $${params.length}`; }
   if (targetUserId) { params.push(targetUserId); query += ` AND r.user_id = $${params.length}`; }
-  if (folio) { params.push(`%${folio}%`); query += ` AND r.folio LIKE $${params.length}`; }
+  if (folio) { params.push(`%${folio}%`); query += ` AND r.folio ILIKE $${params.length}`; }
   if (studentName) { 
     const search = `%${(studentName as string).trim()}%`;
     params.push(search);
-    query += ` AND (s.name LIKE $${params.length} OR r.client_name LIKE $${params.length})`; 
+    query += ` AND (s.name ILIKE $${params.length} OR r.client_name ILIKE $${params.length})`; 
   }
   
   if (category) {
@@ -283,7 +290,7 @@ app.get('/api/users', authenticateToken, async (req: Request, res: Response) => 
 const clientDistPath = path.join(__dirname, '..', '..', 'client', 'dist');
 app.use(express.static(clientDistPath));
 
-// CORRECCIÓN CLAVE EXPRESS V5: El asterisco DEBE llevar el formato /:any(.*)
+// Catch-all route para SPA (Single Page Application)
 app.get('/:any(.*)', (_req: Request, res: Response) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
