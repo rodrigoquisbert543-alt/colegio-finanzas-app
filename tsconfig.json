@@ -5,13 +5,20 @@
     "lib": ["ES2020"],
     "outDir": "./dist",
     "rootDir": "./",
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    "forceConsistentCasingInFileNames": false,
     "resolveJsonModule": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "noEmit": false
   },
-  "include": ["src/**/*", "server/src/**/*"],
-  "exclude": ["node_modules", "client", "dist"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "client", "dist", "server"],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  }
 }
