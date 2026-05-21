@@ -4,8 +4,8 @@ services:
     env: node
     plan: free
     branch: main
-    buildCommand: cd client && npm install && npm run build && cd ../server && npm install && npm run build
-    startCommand: cd server && npm run start
+    buildCommand: npm install
+    startCommand: npm start
     rootDir: .
     envVars:
       - key: DATABASE_URL

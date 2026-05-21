@@ -287,7 +287,7 @@ app.get('/api/users', authenticateToken, async (req: Request, res: Response) => 
 // ==========================================
 // SERVIR ARCHIVOS ESTÁTICOS (FRONTEND)
 // ==========================================
-const clientDistPath = path.join(__dirname, '..', '..', 'client', 'dist');
+const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
 app.use(express.static(clientDistPath));
 
 // Catch-all route para SPA (Single Page Application)
