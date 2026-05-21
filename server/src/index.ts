@@ -304,7 +304,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 // ==========================================
 // ARRANQUE ASÍNCRONO DEL SERVIDOR
 // ==========================================
-async function startServer() {
+export async function startServer() {
   try {
     console.log('Intentando conectar con la base de datos PostgreSQL...');
     pool = await initDb();
@@ -322,4 +322,7 @@ async function startServer() {
   });
 }
 
-startServer();
+// Solo iniciar si este archivo se ejecuta directamente
+if (require.main === module) {
+  startServer();
+}
