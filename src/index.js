@@ -1,11 +1,11 @@
-import express, { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
-import dotenv from 'dotenv';
-import path from 'path';
-import { Pool } from 'pg';
-import fs from 'fs';
+const express = require('express');
+const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const dotenv = require('dotenv');
+const path = require('path');
+const { Pool } = require('pg');
+const fs = require('fs');
 
 dotenv.config();
 
@@ -14,15 +14,11 @@ dotenv.config();
 // ==========================================
 
 // Unified Database Interface matching PG pool's query behavior
-interface DatabaseConnection {
-  query(sql: string, params?: any[]): Promise<{ rows: any[]; rowCount: number }>;
-}
 
 // Custom Adapter for SQLite to mimic PostgreSQL Pool
-class SqlitePool implements DatabaseConnection {
-  private db: any;
+class SqlitePool {
+  constructor(dbPath) {
 
-  constructor(dbPath: string) {
     // Dynamically load sqlite3 to avoid loading native modules on Render if not needed
     let sqlite3;
     try {
@@ -38,7 +34,7 @@ class SqlitePool implements DatabaseConnection {
     }
 
     console.log(`🔌 Conectando a la base de datos local SQLite: ${dbPath}`);
-    this.db = new sqlite3.Database(dbPath, (err: any) => {
+    this.db = new sqlite3.Database(dbPath, (err) => {
       if (err) {
         console.error('❌ Error al abrir la base de datos SQLite:', err.message);
       } else {
@@ -49,11 +45,11 @@ class SqlitePool implements DatabaseConnection {
     });
   }
 
-  public query(sql: string, params: any[] = []): Promise<{ rows: any[]; rowCount: number }> {
+  query(sql, params = []) {
     return new Promise((resolve, reject) => {
       // Determine query type
       let processedSql = sql;
-      let finalParams: any[] = [];
+      let finalParams = [];
 
       // Mapping PostgreSQL specific syntax to SQLite
       processedSql = processedSql.replace(/ILIKE/gi, 'LIKE');
@@ -90,7 +86,7 @@ class SqlitePool implements DatabaseConnection {
       const isSelect = processedSql.trim().toUpperCase().startsWith('SELECT');
 
       if (isSelect) {
-        this.db.all(processedSql, finalParams, (err: any, rows: any[]) => {
+        this.db.all(processedSql, finalParams, (err, rows) => {
           if (err) {
             console.error('❌ SQLite SELECT Error:', err.message, '\nSQL:', processedSql, '\nParams:', finalParams);
             reject(err);
@@ -110,7 +106,7 @@ class SqlitePool implements DatabaseConnection {
           const cleaningRegex = /\s*RETURNING\s+\w+/gi;
           const cleanSql = processedSql.replace(cleaningRegex, '');
 
-          this.db.run(cleanSql, finalParams, function (this: any, err: any) {
+          this.db.run(cleanSql, finalParams, function (err) {
             if (err) {
               console.error('❌ SQLite INSERT Error:', err.message, '\nSQL:', cleanSql, '\nParams:', finalParams);
               reject(err);
@@ -122,7 +118,7 @@ class SqlitePool implements DatabaseConnection {
             }
           });
         } else {
-          this.db.run(processedSql, finalParams, function (this: any, err: any) {
+          this.db.run(processedSql, finalParams, function (err) {
             if (err) {
               console.error('❌ SQLite EXEC Error:', err.message, '\nSQL:', processedSql, '\nParams:', finalParams);
               reject(err);
@@ -139,7 +135,7 @@ class SqlitePool implements DatabaseConnection {
   }
 }
 
-let pool: DatabaseConnection;
+let pool;
 
 async function initDb() {
   if (process.env.DATABASE_URL) {
@@ -197,7 +193,7 @@ async function initDb() {
   `);
 
   // Create default users helper
-  const createDefaultUser = async (username: string, pass: string, role: string, name: string) => {
+  const createDefaultUser = async (username, pass, role, name) => {
     const res = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
     if (res.rowCount === 0) {
       const hashedPassword = await bcrypt.hash(pass, 10);
@@ -229,18 +225,18 @@ app.use(cors());
 app.use(express.json());
 
 // Middleware de salud de la API
-app.get('/api/health', (_req: Request, res: Response) => {
+app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', database: pool ? 'connected' : 'disconnected' });
 });
 
 // Auth Middleware
-export const authenticateToken = (req: any, res: Response, next: NextFunction) => {
+const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) return res.status(401).json({ message: 'Token required' });
 
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+  jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ message: 'Invalid token' });
     req.user = user;
     next();
@@ -248,7 +244,7 @@ export const authenticateToken = (req: any, res: Response, next: NextFunction) =
 };
 
 // Login Route
-app.post('/api/login', async (req: Request, res: Response) => {
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   console.log(`Intento de login para usuario: "${username}"`);
   
@@ -283,13 +279,13 @@ app.post('/api/login', async (req: Request, res: Response) => {
 });
 
 // Students API
-app.get('/api/students', authenticateToken, async (req: Request, res: Response) => {
+app.get('/api/students', authenticateToken, async (req, res) => {
   if (!pool) return res.status(500).json({ message: 'Sin conexión a base de datos' });
   const resDb = await pool.query('SELECT * FROM students ORDER BY name ASC');
   res.json(resDb.rows);
 });
 
-app.get('/api/students/last-receipt/:name', authenticateToken, async (req: Request, res: Response) => {
+app.get('/api/students/last-receipt/:name', authenticateToken, async (req, res) => {
   if (!pool) return res.status(500).json({ message: 'Sin conexión a base de datos' });
   const { name } = req.params;
   const resDb = await pool.query(`
@@ -302,7 +298,7 @@ app.get('/api/students/last-receipt/:name', authenticateToken, async (req: Reque
   res.json(resDb.rows[0] || null);
 });
 
-app.post('/api/students', authenticateToken, async (req: any, res: Response) => {
+app.post('/api/students', authenticateToken, async (req, res) => {
   if (!pool) return res.status(500).json({ message: 'Sin conexión a base de datos' });
   if (req.user.role !== 'admin') return res.status(403).json({ message: 'Solo administradores' });
   const { name, grade, monthly_fee } = req.body;
@@ -319,7 +315,7 @@ app.post('/api/students', authenticateToken, async (req: any, res: Response) => 
 });
 
 // Receipts API
-app.get('/api/receipts', authenticateToken, async (req: any, res: Response) => {
+app.get('/api/receipts', authenticateToken, async (req, res) => {
   if (!pool) return res.status(500).json({ message: 'Sin conexión a base de datos' });
   const { startDate, endDate, folio, studentId, category, studentName, userId: queryUserId } = req.query;
   const { id: currentUserId, role } = req.user;
@@ -331,7 +327,7 @@ app.get('/api/receipts', authenticateToken, async (req: any, res: Response) => {
     LEFT JOIN students s ON r.student_id = s.id
     WHERE 1=1
   `;
-  const params: any[] = [];
+  const params = [];
 
   if (role === 'biblioteca' || role === 'caja') {
     params.push(currentUserId);
@@ -344,7 +340,7 @@ app.get('/api/receipts', authenticateToken, async (req: any, res: Response) => {
   if (studentId) { params.push(studentId); query += ` AND r.student_id = $${params.length}`; }
 
   if (role === 'admin' || role === 'contador') {
-    const selectedUserId = queryUserId?.toString().trim();
+    const selectedUserId = queryUserId ? queryUserId.toString().trim() : null;
     if (selectedUserId) {
       params.push(selectedUserId);
       query += ` AND r.user_id = $${params.length}`;
@@ -352,7 +348,7 @@ app.get('/api/receipts', authenticateToken, async (req: any, res: Response) => {
   }
 
   if (category) {
-    const categoryList = (category as string).split(',').map((c) => c.trim()).filter(Boolean);
+    const categoryList = category.split(',').map((c) => c.trim()).filter(Boolean);
     if (categoryList.length === 1) {
       params.push(categoryList[0]);
       query += ` AND r.category = $${params.length}`;
@@ -363,7 +359,7 @@ app.get('/api/receipts', authenticateToken, async (req: any, res: Response) => {
   }
 
   if (studentName) { 
-    const search = `%${(studentName as string).trim()}%`;
+    const search = `%${studentName.trim()}%`;
     params.push(search);
     query += ` AND (s.name ILIKE $${params.length} OR r.client_name ILIKE $${params.length})`; 
   }
@@ -374,7 +370,7 @@ app.get('/api/receipts', authenticateToken, async (req: any, res: Response) => {
   res.json(resDb.rows);
 });
 
-app.post('/api/receipts', authenticateToken, async (req: any, res: Response) => {
+app.post('/api/receipts', authenticateToken, async (req, res) => {
   if (!pool) return res.status(500).json({ message: 'Sin conexión a base de datos' });
   const { role } = req.user;
   if (role !== 'biblioteca' && role !== 'caja') {
@@ -388,7 +384,7 @@ app.post('/api/receipts', authenticateToken, async (req: any, res: Response) => 
 
     if (!final_student_id && student_name) {
       const existing = await pool.query('SELECT id FROM students WHERE name ILIKE $1', [student_name]);
-      if (existing.rowCount! > 0) {
+      if (existing.rowCount > 0) {
         final_student_id = existing.rows[0].id;
       } else {
         const result = await pool.query('INSERT INTO students (name, grade) VALUES ($1, $2) RETURNING id', [student_name, 'General']);
@@ -412,7 +408,7 @@ app.post('/api/receipts', authenticateToken, async (req: any, res: Response) => 
   }
 });
 
-app.post('/api/receipts/:id/cancel', authenticateToken, async (req: any, res: Response) => {
+app.post('/api/receipts/:id/cancel', authenticateToken, async (req, res) => {
   if (!pool) return res.status(500).json({ message: 'Sin conexión a base de datos' });
   const { role } = req.user;
   if (role !== 'biblioteca' && role !== 'caja' && role !== 'admin') {
@@ -433,7 +429,7 @@ app.post('/api/receipts/:id/cancel', authenticateToken, async (req: any, res: Re
   }
 });
 
-app.get('/api/stats', authenticateToken, async (req: any, res: Response) => {
+app.get('/api/stats', authenticateToken, async (req, res) => {
   if (!pool) return res.status(500).json({ message: 'Sin conexión a base de datos' });
   const { startDate, endDate, userId: queryUserId, category, folio, studentName } = req.query;
   const { id: currentUserId, role } = req.user;
@@ -457,20 +453,20 @@ app.get('/api/stats', authenticateToken, async (req: any, res: Response) => {
     LEFT JOIN students s ON r.student_id = s.id
     WHERE 1=1
   `;
-  const params: any[] = [];
+  const params = [];
 
   if (startDate) { params.push(startDate); query += ` AND r.date >= $${params.length}`; }
   if (endDate) { params.push(endDate + ' 23:59:59'); query += ` AND r.date <= $${params.length}`; }
   if (targetUserId) { params.push(targetUserId); query += ` AND r.user_id = $${params.length}`; }
   if (folio) { params.push(`%${folio}%`); query += ` AND r.folio ILIKE $${params.length}`; }
   if (studentName) { 
-    const search = `%${(studentName as string).trim()}%`;
+    const search = `%${studentName.trim()}%`;
     params.push(search);
     query += ` AND (s.name ILIKE $${params.length} OR r.client_name ILIKE $${params.length})`; 
   }
   
   if (category) {
-    const categories = (category as string).split(',').map((c) => c.trim()).filter(Boolean);
+    const categories = category.split(',').map((c) => c.trim()).filter(Boolean);
     if (categories.length > 0) {
       params.push(categories);
       query += ` AND r.category = ANY($${params.length})`;
@@ -481,7 +477,7 @@ app.get('/api/stats', authenticateToken, async (req: any, res: Response) => {
   res.json(resDb.rows[0]);
 });
 
-app.get('/api/users', authenticateToken, async (req: Request, res: Response) => {
+app.get('/api/users', authenticateToken, async (req, res) => {
   if (!pool) return res.status(500).json({ message: 'Sin conexión a base de datos' });
   const resDb = await pool.query('SELECT id, username, name, role FROM users WHERE role IN (\'caja\', \'biblioteca\')');
   res.json(resDb.rows);
@@ -494,12 +490,12 @@ const clientDistPath = path.join(__dirname, '..', '..', 'client', 'dist');
 app.use(express.static(clientDistPath));
 
 // Catch-all route para SPA (Single Page Application)
-app.get(/.*/, (_req: Request, res: Response) => {
+app.get(/.*/, (_req, res) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
 // Error handling middleware global
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+app.use((err, _req, res, _next) => {
   console.error('❌ Error capturado:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
