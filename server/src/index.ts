@@ -291,7 +291,7 @@ const clientDistPath = path.join(__dirname, '..', '..', 'client', 'dist');
 app.use(express.static(clientDistPath));
 
 // Catch-all route para SPA (Single Page Application)
-app.get('/:path*', (_req: Request, res: Response) => {
+app.get('/*splat', (_req: Request, res: Response) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
