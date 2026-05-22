@@ -284,17 +284,6 @@ app.get('/api/users', authenticateToken, async (req: Request, res: Response) => 
   res.json(resDb.rows);
 });
 
-// ==========================================
-// SERVIR ARCHIVOS ESTÁTICOS (FRONTEND)
-// ==========================================
-const clientDistPath = path.join(__dirname, '..', '..', 'client', 'dist');
-app.use(express.static(clientDistPath));
-
-// Catch-all route para SPA (Single Page Application)
-app.get('/*splat', (_req: Request, res: Response) => {
-  res.sendFile(path.join(clientDistPath, 'index.html'));
-});
-
 // Error handling middleware global
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('❌ Error capturado:', err);
