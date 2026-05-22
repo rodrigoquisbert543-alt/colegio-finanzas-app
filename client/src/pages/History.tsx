@@ -30,8 +30,6 @@ const History = () => {
   const [loading, setLoading] = useState(false);
 
   // Ref para evitar llamadas duplicadas cuando categoryValues actualiza filters
-  const isFetchingRef = useRef(false);
-
   // Sincronizar categoryValues → filters.category SIN disparar el fetch directamente
   // El fetch lo maneja el useEffect de filters
   const pendingCategoryRef = useRef<string | null>(null);
@@ -47,9 +45,6 @@ const History = () => {
 
   // Fetch principal — se dispara solo cuando filters cambia
   useEffect(() => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-
     const load = async () => {
       setLoading(true);
       try {
@@ -70,7 +65,6 @@ const History = () => {
         setFilteredTotals({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
       } finally {
         setLoading(false);
-        isFetchingRef.current = false;
       }
     };
 
@@ -337,3 +331,4 @@ const History = () => {
 };
 
 export default History;
+
