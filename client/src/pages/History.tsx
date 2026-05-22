@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getReceipts, cancelReceipt, getUsers, getStats } from '../api';
 import { Receipt } from '../types';
 import { XCircle, Printer } from 'lucide-react';
@@ -13,6 +13,7 @@ interface HistoryFilters {
 }
 
 const History = () => {
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [filters, setFilters] = useState<HistoryFilters>({
     startDate: '',
@@ -20,70 +21,77 @@ const History = () => {
     folio: '',
     category: '',
     studentName: '',
+    userId: user.role !== 'admin' && user.role !== 'contador' ? String(user.id ?? '') : '',
   });
   const [categoryValues, setCategoryValues] = useState<string[]>([]);
   const [cajeros, setCajeros] = useState<any[]>([]);
   const [selectedForPrint, setSelectedForPrint] = useState<any>(null);
   const [filteredTotals, setFilteredTotals] = useState({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
-  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const [loading, setLoading] = useState(false);
 
-  const fetchAllData = async () => {
-    try {
-      const receiptsRes = await getReceipts(filters);
-      setReceipts(receiptsRes.data);
-    } catch (error) {
-      console.error("Failed to fetch data", error);
-      setReceipts([]); // En caso de error, limpiar la lista.
-    }
-  };
-  
-  const fetchFilteredTotals = async () => {
-    try {
-      const totalsRes = await getStats(filters);
-      setFilteredTotals({
-        income: Number(totalsRes.data.income_total || 0),
-        expense: Number(totalsRes.data.expense_total || 0),
-        income_cash: Number(totalsRes.data.income_cash_total || 0),
-        income_qr: Number(totalsRes.data.income_qr_total || 0),
-      });
-    } catch (error) {
-      console.error("Failed to fetch totals", error);
-      setFilteredTotals({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
-    }
-  };
+  // Ref para evitar llamadas duplicadas cuando categoryValues actualiza filters
+  const isFetchingRef = useRef(false);
 
-  const fetchCajeros = async () => {
-    try {
-      const res = await getUsers(); 
-      setCajeros(res.data);
-    } catch (error) {
-      console.error("Failed to fetch users", error);
+  // Sincronizar categoryValues → filters.category SIN disparar el fetch directamente
+  // El fetch lo maneja el useEffect de filters
+  const pendingCategoryRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const newCategory = categoryValues.join(',');
+    // Solo actualizar si realmente cambió
+    if (newCategory !== filters.category) {
+      pendingCategoryRef.current = newCategory;
+      setFilters(prev => ({ ...prev, category: newCategory }));
     }
-  };
+  }, [categoryValues]);
+
+  // Fetch principal — se dispara solo cuando filters cambia
+  useEffect(() => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [receiptsRes, totalsRes] = await Promise.all([
+          getReceipts(filters),
+          getStats(filters)
+        ]);
+        setReceipts(receiptsRes.data);
+        setFilteredTotals({
+          income: Number(totalsRes.data.income_total || 0),
+          expense: Number(totalsRes.data.expense_total || 0),
+          income_cash: Number(totalsRes.data.income_cash_total || 0),
+          income_qr: Number(totalsRes.data.income_qr_total || 0),
+        });
+      } catch (error) {
+        console.error("Error al cargar datos:", error);
+        setReceipts([]);
+        setFilteredTotals({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
+      } finally {
+        setLoading(false);
+        isFetchingRef.current = false;
+      }
+    };
+
+    load();
+  }, [filters]);
 
   useEffect(() => {
     if (user.role === 'admin' || user.role === 'contador') {
-      fetchCajeros();
+      getUsers()
+        .then(res => setCajeros(res.data))
+        .catch(() => {});
     }
-  }, []); // Cargar cajeros solo una vez
-
-  useEffect(() => {
-    setFilters(prev => ({ ...prev, category: categoryValues.join(',') }));
-  }, [categoryValues]);
-
-  useEffect(() => {
-    const load = async () => {
-      await Promise.all([fetchAllData(), fetchFilteredTotals()]);
-    };
-    load();
-  }, [filters]);
+  }, []);
 
   const handleCancel = async (id: number) => {
     const reason = prompt('Motivo de la anulación:');
     if (!reason) return;
     try {
       await cancelReceipt(id, reason);
-      fetchAllData();
+      // Refrescar recargando con los mismos filtros
+      setFilters(prev => ({ ...prev }));
     } catch (err) {
       alert('Error al anular');
     }
@@ -97,7 +105,7 @@ const History = () => {
       folio: '',
       category: '',
       studentName: '',
-      userId: user.role !== 'admin' && user.role !== 'contador' ? user.id : '',
+      userId: user.role !== 'admin' && user.role !== 'contador' ? String(user.id ?? '') : '',
     });
   };
 
@@ -133,8 +141,16 @@ const History = () => {
   return (
     <div className="container">
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: '0.75rem' }}>
-          <h2>Historial y Auditoría</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <h2 style={{ margin: 0 }}>Historial y Auditoría</h2>
+            {loading && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--secondary)', fontSize: '0.8rem' }}>
+                <div style={{ width: 14, height: 14, border: '2px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                Cargando...
+              </div>
+            )}
+          </div>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <button onClick={handleClearFilters} className="btn" style={{ background: '#94a3b8', color: '#fff' }}>
               Limpiar filtros
@@ -146,8 +162,18 @@ const History = () => {
         </div>
         
         <div className="dashboard-grid" style={{ marginBottom: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
-          <input type="text" value={filters.studentName} placeholder="Buscar por Cliente..." onChange={(e) => setFilters({...filters, studentName: e.target.value})} />
-          <input type="text" value={filters.folio} placeholder="Nro de Comprobante" onChange={(e) => setFilters({...filters, folio: e.target.value})} />
+          <input
+            type="text"
+            value={filters.studentName}
+            placeholder="Buscar por Cliente..."
+            onChange={(e) => setFilters(prev => ({ ...prev, studentName: e.target.value }))}
+          />
+          <input
+            type="text"
+            value={filters.folio}
+            placeholder="Nro de Comprobante"
+            onChange={(e) => setFilters(prev => ({ ...prev, folio: e.target.value }))}
+          />
           <select 
             multiple
             value={categoryValues}
@@ -155,7 +181,7 @@ const History = () => {
               const selected = Array.from(e.target.selectedOptions, option => option.value);
               setCategoryValues(selected);
             }}
-            title="Selecciona varias categorías con Ctrl/Cmd o con el toque en dispositivos móviles"
+            title="Selecciona varias categorías con Ctrl/Cmd"
             style={{ minHeight: '140px' }}
           >
             <optgroup label="INGRESOS">
@@ -171,11 +197,23 @@ const History = () => {
               <option value="Egreso: Otros Egresos">Otros Egresos</option>
             </optgroup>
           </select>
-          <input type="date" title="Desde" value={filters.startDate} onChange={(e) => setFilters({...filters, startDate: e.target.value})} />
-          <input type="date" title="Hasta" value={filters.endDate} onChange={(e) => setFilters({...filters, endDate: e.target.value})} />
-
+          <input
+            type="date"
+            title="Desde"
+            value={filters.startDate}
+            onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+          />
+          <input
+            type="date"
+            title="Hasta"
+            value={filters.endDate}
+            onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+          />
           {(user.role === 'admin' || user.role === 'contador') && (
-            <select value={filters.userId || ''} onChange={(e) => setFilters({...filters, userId: e.target.value})}>
+            <select
+              value={filters.userId || ''}
+              onChange={(e) => setFilters(prev => ({ ...prev, userId: e.target.value }))}
+            >
               <option value="">Todos los Cajeros</option>
               {cajeros.map((c: any) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -184,6 +222,7 @@ const History = () => {
           )}
         </div>
 
+        {/* Totales con filtro */}
         <div className="summary-box">
           <div className="summary-item income">
             <div>
@@ -217,45 +256,53 @@ const History = () => {
 
         <div className="table-responsive">
           <table>
-          <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>
-              <th>Folio</th><th>Fecha</th><th>Cliente / Alumno</th><th>Concepto</th>
-              <th>Efectivo</th><th>QR</th><th>Total</th><th>Estado</th><th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {receipts.map(r => (
-              <tr 
-                key={r.id} 
-                style={{ 
-                  borderBottom: '1px solid #e2e8f0', 
-                  backgroundColor: r.status === 'cancelled' ? '#fee2e2' : r.category.includes('Ingreso') ? '#f0fdf4' : '#f8fafc'
-                }}
-              >
-                <td style={{ padding: '0.75rem' }}>{r.folio}</td>
-                <td>{new Date(r.date).toLocaleDateString()}</td>
-                <td>{r.studentName || 'General'}</td>
-                <td>{r.concept}</td>
-                <td>Bs. {r.amount_cash.toFixed(2)}</td>
-                <td>Bs. {r.amount_qr.toFixed(2)}</td>
-                <td style={{ fontWeight: 'bold' }}>Bs. {r.total_amount.toFixed(2)}</td>
-                <td>
-                  <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', background: r.status === 'active' ? '#dcfce7' : '#fef2f2', color: r.status === 'active' ? '#166534' : '#991b1b' }}>
-                    {r.status === 'active' ? 'Activo' : 'Anulado'}
-                  </span>
-                </td>
-                <td style={{ display: 'flex', gap: '4px' }}>
-                  <button onClick={() => handlePrint(r)} className="btn btn-primary" style={{ padding: '4px', background: '#64748b' }} title="Re-imprimir"><Printer size={16} /></button>
-                  {r.status === 'active' && (user.role === 'biblioteca' || user.role === 'caja' || user.role === 'admin') && (
-                    <button onClick={() => handleCancel(r.id)} className="btn btn-danger" style={{ padding: '4px' }} title="Anular"><XCircle size={16} /></button>
-                  )}
-                </td>
+            <thead>
+              <tr style={{ textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>
+                <th>Folio</th><th>Fecha</th><th>Cliente / Alumno</th><th>Concepto</th>
+                <th>Efectivo</th><th>QR</th><th>Total</th><th>Estado</th><th>Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {receipts.length === 0 && !loading ? (
+                <tr>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--secondary)' }}>
+                    No se encontraron comprobantes con los filtros aplicados.
+                  </td>
+                </tr>
+              ) : (
+                receipts.map(r => (
+                  <tr 
+                    key={r.id} 
+                    style={{ 
+                      borderBottom: '1px solid #e2e8f0', 
+                      backgroundColor: r.status === 'cancelled' ? '#fee2e2' : r.category.includes('Ingreso') ? '#f0fdf4' : '#f8fafc'
+                    }}
+                  >
+                    <td style={{ padding: '0.75rem' }}>{r.folio}</td>
+                    <td>{new Date(r.date).toLocaleDateString()}</td>
+                    <td>{r.studentName || 'General'}</td>
+                    <td>{r.concept}</td>
+                    <td>Bs. {Number(r.amount_cash).toFixed(2)}</td>
+                    <td>Bs. {Number(r.amount_qr).toFixed(2)}</td>
+                    <td style={{ fontWeight: 'bold' }}>Bs. {Number(r.total_amount).toFixed(2)}</td>
+                    <td>
+                      <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', background: r.status === 'active' ? '#dcfce7' : '#fef2f2', color: r.status === 'active' ? '#166534' : '#991b1b' }}>
+                        {r.status === 'active' ? 'Activo' : 'Anulado'}
+                      </span>
+                    </td>
+                    <td style={{ display: 'flex', gap: '4px' }}>
+                      <button onClick={() => handlePrint(r)} className="btn btn-primary" style={{ padding: '4px', background: '#64748b' }} title="Re-imprimir"><Printer size={16} /></button>
+                      {r.status === 'active' && (user.role === 'biblioteca' || user.role === 'caja' || user.role === 'admin') && (
+                        <button onClick={() => handleCancel(r.id)} className="btn btn-danger" style={{ padding: '4px' }} title="Anular"><XCircle size={16} /></button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
 
       {selectedForPrint && (
         <div id="printable-receipt">
@@ -281,6 +328,10 @@ const History = () => {
           <div className="receipt-signature">Recibí Conforme</div>
         </div>
       )}
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 };
