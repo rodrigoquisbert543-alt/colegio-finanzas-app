@@ -45,12 +45,13 @@ const History = () => {
 
   // Fetch principal — se dispara solo cuando filters cambia
   useEffect(() => {
+    const currentFilters = filters;
     const load = async () => {
       setLoading(true);
       try {
         const [receiptsRes, totalsRes] = await Promise.all([
-          getReceipts(filters),
-          getStats(filters)
+          getReceipts(currentFilters),
+          getStats(currentFilters)
         ]);
         setReceipts(receiptsRes.data);
         setFilteredTotals({
@@ -331,4 +332,5 @@ const History = () => {
 };
 
 export default History;
+
 
