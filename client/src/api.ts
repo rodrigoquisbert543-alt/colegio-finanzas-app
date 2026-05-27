@@ -1,11 +1,19 @@
 ﻿import axios from 'axios';
 
-// IMPORTANT: When deploying to Render, the VITE_API_URL should be the full URL of your backend.
-// Example: https://colegio-finanzas-api.onrender.com/api
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_URL,
+  // FIX: usar %20 en vez de + para espacios en query params
+  paramsSerializer: (params) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        searchParams.append(key, String(value));
+      }
+    });
+    return searchParams.toString();
+  },
 });
 
 api.interceptors.request.use((config) => {
@@ -27,4 +35,3 @@ export const cancelReceipt = (id: number, reason: string) => api.post(`/receipts
 export const getStats = (params?: any) => api.get('/stats', { params });
 export const getLastReceiptByName = (name: string) => api.get(`/students/last-receipt/${encodeURIComponent(name)}`);
 export const getUsers = () => api.get('/users');
-
