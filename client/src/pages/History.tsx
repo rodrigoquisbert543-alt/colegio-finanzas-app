@@ -9,7 +9,7 @@ interface HistoryFilters {
   folio: string;
   category: string;
   studentName: string;
-  userId?: string; 
+  userId?: string;
 }
 
 const History = () => {
@@ -29,44 +29,45 @@ const History = () => {
   const [filteredTotals, setFilteredTotals] = useState({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
   const [loading, setLoading] = useState(false);
 
-  // Ref para evitar llamadas duplicadas cuando categoryValues actualiza filters
-  const isFetchingRef = useRef(false);
+  // Ref para cancelar fetches anteriores (evitar race conditions)
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Sincronizar categoryValues â†’ filters.category SIN disparar el fetch directamente
-  // El fetch lo maneja el useEffect de filters
-  const pendingCategoryRef = useRef<string | null>(null);
-
+  // Sincronizar categoryValues -> filters.category
   useEffect(() => {
     const newCategory = categoryValues.join(',');
     setFilters(prev => ({ ...prev, category: newCategory }));
   }, [categoryValues]);
 
-  // Fetch principal â€” se dispara solo cuando filters cambia
+  // Fetch principal — se dispara cuando filters cambia
   useEffect(() => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
+    // Cancelar fetch anterior si existe
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
 
     const load = async () => {
       setLoading(true);
       try {
         const [receiptsRes, totalsRes] = await Promise.all([
           getReceipts(filters),
-          getStats(filters)
+          getStats(filters),
         ]);
-        setReceipts(receiptsRes.data);
+        setReceipts(Array.isArray(receiptsRes.data) ? receiptsRes.data : []);
+        const d = totalsRes.data || {};
         setFilteredTotals({
-          income: Number(totalsRes.data.income_total || 0),
-          expense: Number(totalsRes.data.expense_total || 0),
-          income_cash: Number(totalsRes.data.income_cash_total || 0),
-          income_qr: Number(totalsRes.data.income_qr_total || 0),
+          income:      parseFloat(d.income_total)      || 0,
+          expense:     parseFloat(d.expense_total)     || 0,
+          income_cash: parseFloat(d.income_cash_total) || 0,
+          income_qr:   parseFloat(d.income_qr_total)   || 0,
         });
-      } catch (error) {
-        console.error("Error al cargar datos:", error);
+      } catch (error: any) {
+        if (error?.code === 'ERR_CANCELED' || error?.name === 'AbortError') return;
+        console.error('Error al cargar datos:', error);
         setReceipts([]);
         setFilteredTotals({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
       } finally {
         setLoading(false);
-        isFetchingRef.current = false;
       }
     };
 
@@ -82,11 +83,10 @@ const History = () => {
   }, []);
 
   const handleCancel = async (id: number) => {
-    const reason = prompt('Motivo de la anulaciÃ³n:');
+    const reason = prompt('Motivo de la anulación:');
     if (!reason) return;
     try {
       await cancelReceipt(id, reason);
-      // Refrescar recargando con los mismos filtros
       setFilters(prev => ({ ...prev }));
     } catch (err) {
       alert('Error al anular');
@@ -107,9 +107,15 @@ const History = () => {
 
   const handlePrint = (r: Receipt) => {
     const printData = {
-      folio: r.folio, date: new Date(r.date).toLocaleString(), studentName: r.studentName || 'Cliente General',
-      concept: r.concept, category: r.category, amountCash: r.amount_cash, amountQr: r.amount_qr,
-      totalAmount: r.total_amount, issuer: r.userName || 'Sistema'
+      folio: r.folio,
+      date: new Date(r.date).toLocaleString(),
+      studentName: r.studentName || 'Cliente General',
+      concept: r.concept,
+      category: r.category,
+      amountCash: r.amount_cash,
+      amountQr: r.amount_qr,
+      totalAmount: r.total_amount,
+      issuer: r.userName || 'Sistema',
     };
     setSelectedForPrint(printData);
     setTimeout(() => {
@@ -121,14 +127,25 @@ const History = () => {
   const handleExport = () => {
     const headers = ['Folio', 'Fecha', 'Cliente', 'Concepto', 'Categoria', 'Efectivo', 'QR', 'Total', 'Estado'];
     const rows = receipts.map(r => [
-      r.folio, new Date(r.date).toLocaleDateString(), r.studentName || 'General', r.concept, r.category,
-      r.amount_cash, r.amount_qr, r.total_amount, r.status
+      r.folio,
+      new Date(r.date).toLocaleDateString(),
+      r.studentName || 'General',
+      r.concept,
+      r.category,
+      r.amount_cash,
+      r.amount_qr,
+      r.total_amount,
+      r.status,
     ]);
-    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      headers.join(',') +
+      '\n' +
+      rows.map(e => e.join(',')).join('\n');
     const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `reporte_contable_${filters.startDate || 'full'}.csv`);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `reporte_contable_${filters.startDate || 'full'}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -139,7 +156,7 @@ const History = () => {
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <h2 style={{ margin: 0 }}>Historial y AuditorÃ­a</h2>
+            <h2 style={{ margin: 0 }}>Historial y Auditoría</h2>
             {loading && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--secondary)', fontSize: '0.8rem' }}>
                 <div style={{ width: 14, height: 14, border: '2px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
@@ -156,33 +173,33 @@ const History = () => {
             </button>
           </div>
         </div>
-        
+
         <div className="dashboard-grid" style={{ marginBottom: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
           <input
             type="text"
             value={filters.studentName}
             placeholder="Buscar por Cliente..."
-            onChange={(e) => setFilters(prev => ({ ...prev, studentName: e.target.value }))}
+            onChange={e => setFilters(prev => ({ ...prev, studentName: e.target.value }))}
           />
           <input
             type="text"
             value={filters.folio}
             placeholder="Nro de Comprobante"
-            onChange={(e) => setFilters(prev => ({ ...prev, folio: e.target.value }))}
+            onChange={e => setFilters(prev => ({ ...prev, folio: e.target.value }))}
           />
-          <select 
+          <select
             multiple
             value={categoryValues}
-            onChange={(e) => {
+            onChange={e => {
               const selected = Array.from(e.target.selectedOptions, option => option.value);
               setCategoryValues(selected);
             }}
-            title="Selecciona varias categorÃ­as con Ctrl/Cmd"
+            title="Selecciona varias categorías con Ctrl/Cmd"
             style={{ minHeight: '140px' }}
           >
             <optgroup label="INGRESOS">
               <option value="Ingreso: Inscripción a campamentos">Inscripción a campamentos</option>
-              <option value="Ingreso: Sesiones de PsicologÃ­a">Sesiones de PsicologÃ­a</option>
+              <option value="Ingreso: Sesiones de Psicología">Sesiones de Psicología</option>
               <option value="Ingreso: Alquileres">Alquileres</option>
               <option value="Ingreso: Transporte">Transporte</option>
               <option value="Ingreso: Otros ingresos">Otros ingresos</option>
@@ -197,18 +214,18 @@ const History = () => {
             type="date"
             title="Desde"
             value={filters.startDate}
-            onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+            onChange={e => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
           />
           <input
             type="date"
             title="Hasta"
             value={filters.endDate}
-            onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+            onChange={e => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
           />
           {(user.role === 'admin' || user.role === 'contador') && (
             <select
               value={filters.userId || ''}
-              onChange={(e) => setFilters(prev => ({ ...prev, userId: e.target.value }))}
+              onChange={e => setFilters(prev => ({ ...prev, userId: e.target.value }))}
             >
               <option value="">Todos los Cajeros</option>
               {cajeros.map((c: any) => (
@@ -267,11 +284,11 @@ const History = () => {
                 </tr>
               ) : (
                 receipts.map(r => (
-                  <tr 
-                    key={r.id} 
-                    style={{ 
-                      borderBottom: '1px solid #e2e8f0', 
-                      backgroundColor: r.status === 'cancelled' ? '#fee2e2' : r.category.includes('Ingreso') ? '#f0fdf4' : '#f8fafc'
+                  <tr
+                    key={r.id}
+                    style={{
+                      borderBottom: '1px solid #e2e8f0',
+                      backgroundColor: r.status === 'cancelled' ? '#fee2e2' : r.category.includes('Ingreso') ? '#f0fdf4' : '#f8fafc',
                     }}
                   >
                     <td style={{ padding: '0.75rem' }}>{r.folio}</td>
@@ -306,12 +323,12 @@ const History = () => {
             <h3>SIGE PRO - COLEGIO</h3>
             <p style={{ fontSize: '14px', fontWeight: 'bold' }}>{selectedForPrint.category.includes('Ingreso') ? 'COMPROBANTE DE INGRESO' : 'COMPROBANTE DE EGRESO'}</p>
             <p><strong>Folio: {selectedForPrint.folio}</strong></p>
-            <p>(COPIA - REIMPRESIÃ“N)</p>
+            <p>(COPIA - REIMPRESIÓN)</p>
           </div>
           <div className="receipt-row"><span>Fecha:</span> <span>{selectedForPrint.date}</span></div>
           <div className="receipt-row"><span>Entregado a/por:</span> <span>{selectedForPrint.studentName}</span></div>
           <div className="receipt-row"><span>Concepto:</span> <span>{selectedForPrint.concept}</span></div>
-          <div className="receipt-row"><span>CategorÃ­a:</span> <span>{selectedForPrint.category}</span></div>
+          <div className="receipt-row"><span>Categoría:</span> <span>{selectedForPrint.category}</span></div>
           <br />
           <div className="receipt-row"><span>Monto Efectivo:</span> <span>Bs. {Number(selectedForPrint.amountCash).toFixed(2)}</span></div>
           <div className="receipt-row"><span>Monto QR/Banco:</span> <span>Bs. {Number(selectedForPrint.amountQr).toFixed(2)}</span></div>
@@ -321,7 +338,7 @@ const History = () => {
           <br />
           <p style={{ textAlign: 'center' }}>Emitido por: {selectedForPrint.issuer}</p>
           <p style={{ textAlign: 'center', fontSize: '10px' }}>Documento de Control Interno</p>
-          <div className="receipt-signature">RecibÃ­ Conforme</div>
+          <div className="receipt-signature">Recibí Conforme</div>
         </div>
       )}
 
@@ -333,5 +350,3 @@ const History = () => {
 };
 
 export default History;
-
-
