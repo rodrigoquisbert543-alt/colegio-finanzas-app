@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 // IMPORTANT: When deploying to Render, the VITE_API_URL should be the full URL of your backend.
 // Example: https://colegio-finanzas-api.onrender.com/api
@@ -9,7 +9,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem('token');
+  const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -27,3 +27,4 @@ export const cancelReceipt = (id: number, reason: string) => api.post(`/receipts
 export const getStats = (params?: any) => api.get('/stats', { params });
 export const getLastReceiptByName = (name: string) => api.get(`/students/last-receipt/${encodeURIComponent(name)}`);
 export const getUsers = () => api.get('/users');
+

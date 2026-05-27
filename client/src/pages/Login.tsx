@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../api';
 
@@ -12,11 +12,11 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await login({ username, password });
-      sessionStorage.setItem('token', response.data.token);
-      sessionStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al iniciar sesión');
+      setError(err.response?.data?.message || 'Error al iniciar sesiÃ³n');
     }
   };
 
@@ -28,7 +28,7 @@ const Login = () => {
         {error && <p className="error-message">{error}</p>}
         <label htmlFor="username">Usuario</label>
         <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} required />
-        <label htmlFor="password">Contraseña</label>
+        <label htmlFor="password">ContraseÃ±a</label>
         <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         <button type="submit" className="btn btn-primary">Entrar</button>
       </form>
@@ -37,3 +37,4 @@ const Login = () => {
 };
 
 export default Login;
+

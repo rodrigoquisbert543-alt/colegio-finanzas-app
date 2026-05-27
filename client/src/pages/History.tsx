@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { getReceipts, cancelReceipt, getUsers, getStats } from '../api';
 import { Receipt } from '../types';
 import { XCircle, Printer } from 'lucide-react';
@@ -13,7 +13,7 @@ interface HistoryFilters {
 }
 
 const History = () => {
-  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [filters, setFilters] = useState<HistoryFilters>({
     startDate: '',
@@ -32,20 +32,20 @@ const History = () => {
   // Ref para evitar llamadas duplicadas cuando categoryValues actualiza filters
   const isFetchingRef = useRef(false);
 
-  // Sincronizar categoryValues → filters.category SIN disparar el fetch directamente
+  // Sincronizar categoryValues â†’ filters.category SIN disparar el fetch directamente
   // El fetch lo maneja el useEffect de filters
   const pendingCategoryRef = useRef<string | null>(null);
 
   useEffect(() => {
     const newCategory = categoryValues.join(',');
-    // Solo actualizar si realmente cambió
+    // Solo actualizar si realmente cambiÃ³
     if (newCategory !== filters.category) {
       pendingCategoryRef.current = newCategory;
       setFilters(prev => ({ ...prev, category: newCategory }));
     }
   }, [categoryValues]);
 
-  // Fetch principal — se dispara solo cuando filters cambia
+  // Fetch principal â€” se dispara solo cuando filters cambia
   useEffect(() => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
@@ -86,7 +86,7 @@ const History = () => {
   }, []);
 
   const handleCancel = async (id: number) => {
-    const reason = prompt('Motivo de la anulación:');
+    const reason = prompt('Motivo de la anulaciÃ³n:');
     if (!reason) return;
     try {
       await cancelReceipt(id, reason);
@@ -143,7 +143,7 @@ const History = () => {
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <h2 style={{ margin: 0 }}>Historial y Auditoría</h2>
+            <h2 style={{ margin: 0 }}>Historial y AuditorÃ­a</h2>
             {loading && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--secondary)', fontSize: '0.8rem' }}>
                 <div style={{ width: 14, height: 14, border: '2px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
@@ -181,12 +181,12 @@ const History = () => {
               const selected = Array.from(e.target.selectedOptions, option => option.value);
               setCategoryValues(selected);
             }}
-            title="Selecciona varias categorías con Ctrl/Cmd"
+            title="Selecciona varias categorÃ­as con Ctrl/Cmd"
             style={{ minHeight: '140px' }}
           >
             <optgroup label="INGRESOS">
-              <option value="Ingreso: Inscripción a campamentos">Inscripción a campamentos</option>
-              <option value="Ingreso: Sesiones de Psicología">Sesiones de Psicología</option>
+              <option value="Ingreso: InscripciÃ³n a campamentos">InscripciÃ³n a campamentos</option>
+              <option value="Ingreso: Sesiones de PsicologÃ­a">Sesiones de PsicologÃ­a</option>
               <option value="Ingreso: Alquileres">Alquileres</option>
               <option value="Ingreso: Transporte">Transporte</option>
               <option value="Ingreso: Otros ingresos">Otros ingresos</option>
@@ -310,12 +310,12 @@ const History = () => {
             <h3>SIGE PRO - COLEGIO</h3>
             <p style={{ fontSize: '14px', fontWeight: 'bold' }}>{selectedForPrint.category.includes('Ingreso') ? 'COMPROBANTE DE INGRESO' : 'COMPROBANTE DE EGRESO'}</p>
             <p><strong>Folio: {selectedForPrint.folio}</strong></p>
-            <p>(COPIA - REIMPRESIÓN)</p>
+            <p>(COPIA - REIMPRESIÃ“N)</p>
           </div>
           <div className="receipt-row"><span>Fecha:</span> <span>{selectedForPrint.date}</span></div>
           <div className="receipt-row"><span>Entregado a/por:</span> <span>{selectedForPrint.studentName}</span></div>
           <div className="receipt-row"><span>Concepto:</span> <span>{selectedForPrint.concept}</span></div>
-          <div className="receipt-row"><span>Categoría:</span> <span>{selectedForPrint.category}</span></div>
+          <div className="receipt-row"><span>CategorÃ­a:</span> <span>{selectedForPrint.category}</span></div>
           <br />
           <div className="receipt-row"><span>Monto Efectivo:</span> <span>Bs. {Number(selectedForPrint.amountCash).toFixed(2)}</span></div>
           <div className="receipt-row"><span>Monto QR/Banco:</span> <span>Bs. {Number(selectedForPrint.amountQr).toFixed(2)}</span></div>
@@ -325,7 +325,7 @@ const History = () => {
           <br />
           <p style={{ textAlign: 'center' }}>Emitido por: {selectedForPrint.issuer}</p>
           <p style={{ textAlign: 'center', fontSize: '10px' }}>Documento de Control Interno</p>
-          <div className="receipt-signature">Recibí Conforme</div>
+          <div className="receipt-signature">RecibÃ­ Conforme</div>
         </div>
       )}
 
@@ -337,3 +337,4 @@ const History = () => {
 };
 
 export default History;
+
