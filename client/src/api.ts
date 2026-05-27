@@ -6,13 +6,13 @@ const api = axios.create({
   baseURL: API_URL,
   // FIX: usar %20 en vez de + para espacios en query params
   paramsSerializer: (params) => {
-    const searchParams = new URLSearchParams();
+    const parts: string[] = [];
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        searchParams.append(key, String(value));
+        parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
       }
     });
-    return searchParams.toString();
+    return parts.join('&');
   },
 });
 
