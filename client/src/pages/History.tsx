@@ -185,7 +185,7 @@ const History = () => {
             style={{ minHeight: '140px' }}
           >
             <optgroup label="INGRESOS">
-              <option value="Ingreso: InscripciÃ³n a campamentos">InscripciÃ³n a campamentos</option>
+              <option value="Ingreso: Inscripción a campamentos">Inscripción a campamentos</option>
               <option value="Ingreso: Sesiones de PsicologÃ­a">Sesiones de PsicologÃ­a</option>
               <option value="Ingreso: Alquileres">Alquileres</option>
               <option value="Ingreso: Transporte">Transporte</option>
@@ -337,4 +337,5 @@ const History = () => {
 };
 
 export default History;
+
 
