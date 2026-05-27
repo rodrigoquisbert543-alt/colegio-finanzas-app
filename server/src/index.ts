@@ -101,7 +101,6 @@ app.post('/api/students', authenticateToken, async (req: any, res: Response) => 
   if (req.user.role !== 'admin') return res.status(403).json({ message: 'Solo administradores' });
   const { name, grade, monthly_fee } = req.body;
   try {
-    // Verificar si ya existe un estudiante con ese nombre (ignorar mayúsculas)
     const existing = await pool.query('SELECT id FROM students WHERE name ILIKE $1', [name]);
     if (existing.rowCount > 0) {
       return res.status(400).json({ message: 'Ya existe un estudiante con este nombre' });
@@ -133,9 +132,9 @@ app.get('/api/receipts', authenticateToken, async (req: any, res: Response) => {
     query += ` AND r.user_id = $${params.length}`;
   }
 
-  if (startDate) { params.push(startDate); query += ` AND r.date >= $${params.length}`; }
-  if (endDate) { params.push(endDate + ' 23:59:59'); query += ` AND r.date <= $${params.length}`; }
-  if (folio) { params.push(`%${folio}%`); query += ` AND r.folio ILIKE $${params.length}`; }
+  if (startDate && (startDate as string).trim()) { params.push(startDate); query += ` AND r.date >= $${params.length}`; }
+  if (endDate && (endDate as string).trim()) { params.push(endDate + ' 23:59:59'); query += ` AND r.date <= $${params.length}`; }
+  if (folio && (folio as string).trim()) { params.push(`%${(folio as string).trim()}%`); query += ` AND r.folio ILIKE $${params.length}`; }
   if (studentId) { params.push(studentId); query += ` AND r.student_id = $${params.length}`; }
 
   if (role === 'admin' || role === 'contador') {
@@ -146,18 +145,18 @@ app.get('/api/receipts', authenticateToken, async (req: any, res: Response) => {
     }
   }
 
-  if (category) {
-    const categoryList = (category as string).split(',').map((c) => c.trim()).filter(Boolean);
-    if (categoryList.length === 1) {
-      params.push(categoryList[0]);
-      query += ` AND r.category = $${params.length}`;
-    } else if (categoryList.length > 1) {
-      params.push(categoryList);
+  if (category && (category as string).trim()) {
+    const categories = (category as string)
+      .split(',')
+      .map((c) => c.trim().replace(/\+/g, ' '))  // FIX: convertir + a espacio
+      .filter(Boolean);
+    if (categories.length > 0) {
+      params.push(categories);
       query += ` AND r.category = ANY($${params.length})`;
     }
   }
 
-  if (studentName) { 
+  if (studentName && (studentName as string).trim()) { 
     const search = `%${(studentName as string).trim()}%`;
     params.push(search);
     query += ` AND (s.name ILIKE $${params.length} OR r.client_name ILIKE $${params.length})`; 
@@ -165,8 +164,13 @@ app.get('/api/receipts', authenticateToken, async (req: any, res: Response) => {
 
   query += ' ORDER BY r.date DESC';
   
-  const resDb = await pool.query(query, params);
-  res.json(resDb.rows);
+  try {
+    const resDb = await pool.query(query, params);
+    res.json(resDb.rows);
+  } catch (error) {
+    console.error('Error en receipts:', error);
+    res.status(500).json({ message: 'Error al obtener comprobantes' });
+  }
 });
 
 app.post('/api/receipts', authenticateToken, async (req: any, res: Response) => {
@@ -182,7 +186,6 @@ app.post('/api/receipts', authenticateToken, async (req: any, res: Response) => 
     let final_student_id = student_id;
 
     if (!final_student_id && student_name) {
-      // Búsqueda insensible a mayúsculas
       const existing = await pool.query('SELECT id FROM students WHERE name ILIKE $1', [student_name]);
       if (existing.rowCount! > 0) {
         final_student_id = existing.rows[0].id;
@@ -191,7 +194,6 @@ app.post('/api/receipts', authenticateToken, async (req: any, res: Response) => 
         final_student_id = result.rows[0].id;
       }
     }
-
 
     const date = new Date();
     const folio = `REC-${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
@@ -230,52 +232,79 @@ app.post('/api/receipts/:id/cancel', authenticateToken, async (req: any, res: Re
   }
 });
 
+// ==========================================
+// RUTA /api/stats — CORREGIDA
+// ==========================================
 app.get('/api/stats', authenticateToken, async (req: any, res: Response) => {
   if (!pool) return res.status(500).json({ message: 'Sin conexión a base de datos' });
   const { startDate, endDate, userId: queryUserId, category, folio, studentName } = req.query;
   const { id: currentUserId, role } = req.user;
 
-  let targetUserId = queryUserId;
-  if ((role === 'biblioteca' || role === 'caja') && !queryUserId) {
-    targetUserId = currentUserId;
+  // FIX 1: Para cajeros/biblioteca forzar siempre su propio userId como string
+  let targetUserId: string | null = null;
+  if (role === 'biblioteca' || role === 'caja') {
+    targetUserId = String(currentUserId);
+  } else {
+    const parsed = queryUserId?.toString().trim();
+    targetUserId = parsed || null;
   }
 
+  // FIX 2: COALESCE para evitar null cuando no hay filas
   let query = `
     SELECT 
-      SUM(CASE WHEN status = 'active' AND category LIKE 'Ingreso%' THEN total_amount ELSE 0 END) as income_total,
-      SUM(CASE WHEN status = 'active' AND category LIKE 'Egreso%' THEN total_amount ELSE 0 END) as expense_total,
-      
-      SUM(CASE WHEN status = 'active' AND category LIKE 'Ingreso%' THEN amount_cash ELSE 0 END) as income_cash_total,
-      SUM(CASE WHEN status = 'active' AND category LIKE 'Ingreso%' THEN amount_qr ELSE 0 END) as income_qr_total,
-
-      SUM(CASE WHEN status = 'active' AND category LIKE 'Egreso%' THEN amount_cash ELSE 0 END) as expense_cash_total,
-      SUM(CASE WHEN status = 'active' AND category LIKE 'Egreso%' THEN amount_qr ELSE 0 END) as expense_qr_total
+      COALESCE(SUM(CASE WHEN r.status = 'active' AND r.category LIKE 'Ingreso%' THEN r.total_amount ELSE 0 END), 0) as income_total,
+      COALESCE(SUM(CASE WHEN r.status = 'active' AND r.category LIKE 'Egreso%' THEN r.total_amount ELSE 0 END), 0) as expense_total,
+      COALESCE(SUM(CASE WHEN r.status = 'active' AND r.category LIKE 'Ingreso%' THEN r.amount_cash ELSE 0 END), 0) as income_cash_total,
+      COALESCE(SUM(CASE WHEN r.status = 'active' AND r.category LIKE 'Ingreso%' THEN r.amount_qr ELSE 0 END), 0) as income_qr_total,
+      COALESCE(SUM(CASE WHEN r.status = 'active' AND r.category LIKE 'Egreso%' THEN r.amount_cash ELSE 0 END), 0) as expense_cash_total,
+      COALESCE(SUM(CASE WHEN r.status = 'active' AND r.category LIKE 'Egreso%' THEN r.amount_qr ELSE 0 END), 0) as expense_qr_total
     FROM receipts r
     LEFT JOIN students s ON r.student_id = s.id
     WHERE 1=1
   `;
   const params: any[] = [];
 
-  if (startDate) { params.push(startDate); query += ` AND r.date >= $${params.length}`; }
-  if (endDate) { params.push(endDate + ' 23:59:59'); query += ` AND r.date <= $${params.length}`; }
-  if (targetUserId) { params.push(targetUserId); query += ` AND r.user_id = $${params.length}`; }
-  if (folio) { params.push(`%${folio}%`); query += ` AND r.folio ILIKE $${params.length}`; }
-  if (studentName) { 
+  // FIX 3: Validar strings vacíos antes de agregar filtros
+  if (startDate && (startDate as string).trim()) { 
+    params.push(startDate); 
+    query += ` AND r.date >= $${params.length}`; 
+  }
+  if (endDate && (endDate as string).trim()) { 
+    params.push(endDate + ' 23:59:59'); 
+    query += ` AND r.date <= $${params.length}`; 
+  }
+  if (targetUserId) { 
+    params.push(targetUserId); 
+    query += ` AND r.user_id = $${params.length}`; 
+  }
+  if (folio && (folio as string).trim()) { 
+    params.push(`%${(folio as string).trim()}%`); 
+    query += ` AND r.folio ILIKE $${params.length}`; 
+  }
+  if (studentName && (studentName as string).trim()) { 
     const search = `%${(studentName as string).trim()}%`;
     params.push(search);
     query += ` AND (s.name ILIKE $${params.length} OR r.client_name ILIKE $${params.length})`; 
   }
-  
-  if (category) {
-    const categories = (category as string).split(',').map((c) => c.trim()).filter(Boolean);
+  if (category && (category as string).trim()) {
+    const categories = (category as string)
+      .split(',')
+      .map((c) => c.trim().replace(/\+/g, ' '))  // FIX: convertir + a espacio
+      .filter(Boolean);
     if (categories.length > 0) {
       params.push(categories);
       query += ` AND r.category = ANY($${params.length})`;
     }
   }
 
-  const resDb = await pool.query(query, params);
-  res.json(resDb.rows[0]);
+  try {
+    console.log('📊 Stats query params:', params);
+    const resDb = await pool.query(query, params);
+    res.json(resDb.rows[0]);
+  } catch (error) {
+    console.error('❌ Error en stats:', error);
+    res.status(500).json({ message: 'Error al obtener estadísticas' });
+  }
 });
 
 app.get('/api/users', authenticateToken, async (req: Request, res: Response) => {
@@ -303,7 +332,6 @@ export async function startServer() {
     console.log('Iniciando el servidor en modo de contingencia...');
   }
 
-  // Ejecutamos listen usando la interfaz global '0.0.0.0' requerida por Render
   app.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`🚀 ====================================================`);
     console.log(`🚀 SERVIDOR ESCUCHANDO EN EL PUERTO EN LA NUBE: ${PORT}`);
@@ -311,7 +339,6 @@ export async function startServer() {
   });
 }
 
-// Solo iniciar si este archivo se ejecuta directamente
 if (require.main === module) {
   startServer();
 }
