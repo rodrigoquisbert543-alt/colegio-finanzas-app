@@ -38,11 +38,7 @@ const History = () => {
 
   useEffect(() => {
     const newCategory = categoryValues.join(',');
-    // Solo actualizar si realmente cambiÃ³
-    if (newCategory !== filters.category) {
-      pendingCategoryRef.current = newCategory;
-      setFilters(prev => ({ ...prev, category: newCategory }));
-    }
+    setFilters(prev => ({ ...prev, category: newCategory }));
   }, [categoryValues]);
 
   // Fetch principal â€” se dispara solo cuando filters cambia
