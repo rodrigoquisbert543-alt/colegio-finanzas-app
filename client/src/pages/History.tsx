@@ -48,7 +48,10 @@ const History = () => {
     }
     categoryDebounceRef.current = window.setTimeout(() => {
       const newCategory = categoryValues.join(',');
-      setFilters(prev => ({ ...prev, category: newCategory }));
+      setFilters(prev => {
+        if (prev.category === newCategory) return prev;
+        return { ...prev, category: newCategory };
+      });
     }, 150);
 
     return () => {
