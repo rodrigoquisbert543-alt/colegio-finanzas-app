@@ -76,11 +76,12 @@ const History = () => {
         if (version !== requestVersionRef.current) return; // respuesta obsoleta
         setReceipts(Array.isArray(receiptsRes.data) ? receiptsRes.data : []);
         const d = totalsRes.data || {};
+        console.log('History.tsx - stats response (version)', version, d, 'applied filters:', filters);
         setFilteredTotals({
-          income:      parseFloat(d.income_total)      || 0,
-          expense:     parseFloat(d.expense_total)     || 0,
-          income_cash: parseFloat(d.income_cash_total) || 0,
-          income_qr:   parseFloat(d.income_qr_total)   || 0,
+          income:      Number(d.income_total)      || 0,
+          expense:     Number(d.expense_total)     || 0,
+          income_cash: Number(d.income_cash_total) || 0,
+          income_qr:   Number(d.income_qr_total)   || 0,
         });
       } catch (error: any) {
         if (version !== requestVersionRef.current) return;
