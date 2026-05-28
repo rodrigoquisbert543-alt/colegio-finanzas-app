@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { getReceipts, cancelReceipt, getUsers, getStats } from '../api';
 import { Receipt } from '../types';
 import { XCircle, Printer } from 'lucide-react';
@@ -28,6 +28,7 @@ const History = () => {
   const [selectedForPrint, setSelectedForPrint] = useState<any>(null);
   const [filteredTotals, setFilteredTotals] = useState({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
   const [loading, setLoading] = useState(false);
+  const requestVersionRef = useRef(0);
 
   // Sincronizar categoryValues -> filters.category
   useEffect(() => {
@@ -37,7 +38,7 @@ const History = () => {
 
   // Fetch principal — se dispara cuando filters cambia
   useEffect(() => {
-    let cancelled = false;
+    const version = ++requestVersionRef.current;
 
     const load = async () => {
       setLoading(true);
@@ -46,7 +47,7 @@ const History = () => {
           getReceipts(filters),
           getStats(filters),
         ]);
-        if (cancelled) return;
+        if (version !== requestVersionRef.current) return; // respuesta obsoleta
         setReceipts(Array.isArray(receiptsRes.data) ? receiptsRes.data : []);
         const d = totalsRes.data || {};
         setFilteredTotals({
@@ -56,17 +57,17 @@ const History = () => {
           income_qr:   parseFloat(d.income_qr_total)   || 0,
         });
       } catch (error: any) {
-        if (cancelled) return;
+        if (version !== requestVersionRef.current) return;
         console.error('Error al cargar datos:', error);
         setReceipts([]);
         setFilteredTotals({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
       } finally {
-        if (!cancelled) setLoading(false);
+        if (version === requestVersionRef.current) setLoading(false);
       }
     };
 
     load();
-    return () => { cancelled = true; };
+    // No cleanup necesario: el token de versión ignora respuestas antiguas
   }, [filters]);
 
   useEffect(() => {
