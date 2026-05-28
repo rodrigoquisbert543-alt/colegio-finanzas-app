@@ -77,12 +77,21 @@ const History = () => {
         setReceipts(Array.isArray(receiptsRes.data) ? receiptsRes.data : []);
         const d = totalsRes.data || {};
         console.log('History.tsx - stats response (version)', version, d, 'applied filters:', filters);
-        setFilteredTotals({
+        const parsedTotals = {
           income:      Number(d.income_total)      || 0,
           expense:     Number(d.expense_total)     || 0,
           income_cash: Number(d.income_cash_total) || 0,
           income_qr:   Number(d.income_qr_total)   || 0,
-        });
+        };
+
+        const receiptsArray = Array.isArray(receiptsRes.data) ? receiptsRes.data : [];
+        const hasNonZero = Object.values(parsedTotals).some(v => v !== 0);
+
+        if (!hasNonZero && receiptsArray.length > 0) {
+          console.warn('History.tsx - stats response all zeros but receipts exist — skipping totals overwrite', { version, parsedTotals, receiptsCount: receiptsArray.length });
+        } else {
+          setFilteredTotals(parsedTotals);
+        }
       } catch (error: any) {
         if (version !== requestVersionRef.current) return;
         console.error('Error al cargar datos:', error);
