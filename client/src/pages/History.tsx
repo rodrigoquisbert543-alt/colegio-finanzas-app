@@ -31,6 +31,16 @@ const History = () => {
   const requestVersionRef = useRef(0);
   const categoryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const categoryTotals = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    receipts.forEach(r => {
+      const key = r.category || 'Sin categoría';
+      const val = Number(r.total_amount || 0);
+      map[key] = (map[key] || 0) + val;
+    });
+    return map;
+  }, [receipts]);
+
   // Sincronizar categoryValues -> filters.category (debounced)
   useEffect(() => {
     if (categoryDebounceRef.current) {
@@ -275,6 +285,26 @@ const History = () => {
             <span>Bs. {filteredTotals.expense.toFixed(2)}</span>
           </div>
         </div>
+
+        {/* Totales por categoría (cliente) */}
+        {categoryValues.length > 0 && (
+          <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+            <h3 style={{ margin: '0 0 0.5rem 0' }}>Totales por Categoría (visibles)</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+              {categoryValues.map(cat => (
+                <div key={cat} className="card" style={{ padding: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.95rem' }}>{cat}</strong>
+                      <p className="summary-note">Total por categoría (filtro)</p>
+                    </div>
+                    <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Bs. {(categoryTotals[cat] || 0).toFixed(2)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="table-responsive">
           <table>
