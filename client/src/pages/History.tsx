@@ -29,11 +29,24 @@ const History = () => {
   const [filteredTotals, setFilteredTotals] = useState({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
   const [loading, setLoading] = useState(false);
   const requestVersionRef = useRef(0);
+  const categoryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sincronizar categoryValues -> filters.category
+  // Sincronizar categoryValues -> filters.category (debounced)
   useEffect(() => {
-    const newCategory = categoryValues.join(',');
-    setFilters(prev => ({ ...prev, category: newCategory }));
+    if (categoryDebounceRef.current) {
+      clearTimeout(categoryDebounceRef.current);
+    }
+    categoryDebounceRef.current = window.setTimeout(() => {
+      const newCategory = categoryValues.join(',');
+      setFilters(prev => ({ ...prev, category: newCategory }));
+    }, 150);
+
+    return () => {
+      if (categoryDebounceRef.current) {
+        clearTimeout(categoryDebounceRef.current);
+        categoryDebounceRef.current = null;
+      }
+    };
   }, [categoryValues]);
 
   // Fetch principal — se dispara cuando filters cambia
