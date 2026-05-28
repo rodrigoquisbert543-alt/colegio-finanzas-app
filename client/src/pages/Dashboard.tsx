@@ -40,7 +40,7 @@ const Dashboard = () => {
         expense_qr_total: Number(res.data.expense_qr_total || 0)
       });
     } catch (error) {
-      console.error('Error al obtener estadÃ­sticas para el dashboard:', error);
+      console.error('Error al obtener estadísticas para el dashboard:', error);
       setStats({ 
         income_total: 0, expense_total: 0, cash_balance: 0, qr_balance: 0,
         income_cash_total: 0, income_qr_total: 0, expense_cash_total: 0, expense_qr_total: 0
