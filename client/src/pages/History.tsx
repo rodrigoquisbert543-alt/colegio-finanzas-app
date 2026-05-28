@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { getReceipts, cancelReceipt, getUsers, getStats } from '../api';
 import { Receipt } from '../types';
 import { XCircle, Printer } from 'lucide-react';
@@ -29,9 +29,6 @@ const History = () => {
   const [filteredTotals, setFilteredTotals] = useState({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
   const [loading, setLoading] = useState(false);
 
-  // Ref para cancelar fetches anteriores (evitar race conditions)
-  const abortControllerRef = useRef<AbortController | null>(null);
-
   // Sincronizar categoryValues -> filters.category
   useEffect(() => {
     const newCategory = categoryValues.join(',');
@@ -40,11 +37,7 @@ const History = () => {
 
   // Fetch principal — se dispara cuando filters cambia
   useEffect(() => {
-    // Cancelar fetch anterior si existe
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
+    let cancelled = false;
 
     const load = async () => {
       setLoading(true);
@@ -53,6 +46,7 @@ const History = () => {
           getReceipts(filters),
           getStats(filters),
         ]);
+        if (cancelled) return;
         setReceipts(Array.isArray(receiptsRes.data) ? receiptsRes.data : []);
         const d = totalsRes.data || {};
         setFilteredTotals({
@@ -62,16 +56,17 @@ const History = () => {
           income_qr:   parseFloat(d.income_qr_total)   || 0,
         });
       } catch (error: any) {
-        if (error?.code === 'ERR_CANCELED' || error?.name === 'AbortError') return;
+        if (cancelled) return;
         console.error('Error al cargar datos:', error);
         setReceipts([]);
         setFilteredTotals({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     load();
+    return () => { cancelled = true; };
   }, [filters]);
 
   useEffect(() => {
