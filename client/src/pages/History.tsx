@@ -29,7 +29,7 @@ const History = () => {
   const [filteredTotals, setFilteredTotals] = useState({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
   const [loading, setLoading] = useState(false);
   const requestVersionRef = useRef(0);
-  const categoryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const categoryDebounceRef = useRef<number | NodeJS.Timeout | null>(null);
 
   const categoryTotals = React.useMemo(() => {
     const map: Record<string, number> = {};
