@@ -80,7 +80,7 @@ const Dashboard = () => {
             <Sparkles size={16} />
             Sistema Integrado de Control Interno
           </div>
-          <h2 style={{ fontSize: '2.25rem', marginTop: '0.25rem' }}>Panel de Control y ConciliaciÃ³n</h2>
+          <h2 style={{ fontSize: '2.25rem', marginTop: '0.25rem' }}>Panel de Control y Conciliación</h2>
           <p className="page-subtitle">
             {filters.userId
               ? `Caja activa de: ${cashiers.find(c => String(c.id) === String(filters.userId))?.name || user.name}`
@@ -174,7 +174,7 @@ const Dashboard = () => {
         <div className="card" style={{ borderLeft: '6px solid var(--primary)', background: 'linear-gradient(135deg, #ffffff 0%, hsl(var(--primary-hue), 85%, 99%) 100%)', opacity: loading ? 0.7 : 1, transition: 'opacity 0.3s' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
             <div>
-              <p style={{ color: 'var(--secondary)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Saldo Efectivo FÃ­sico</p>
+              <p style={{ color: 'var(--secondary)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Saldo Efectivo Físico</p>
               <h3 style={{ fontSize: '2rem', color: 'var(--primary)', margin: '0.5rem 0 0 0', fontWeight: '800' }}>Bs. {Number(stats.cash_balance || 0).toFixed(2)}</h3>
             </div>
             <div style={{ padding: '0.6rem', borderRadius: '0.5rem', background: 'hsl(var(--primary-hue), 85%, 95%)', color: 'var(--primary)' }}>
@@ -233,8 +233,8 @@ const Dashboard = () => {
         </div>
 
         <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h3 style={{ margin: '0 0 1.25rem 0', fontSize: '1.25rem', fontFamily: 'Plus Jakarta Sans' }}>DistribuciÃ³n de MÃ©todos de Pago</h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--secondary)', marginBottom: '1.5rem' }}>ProporciÃ³n de pagos en efectivo vs. transferencias digitales (QR)</p>
+          <h3 style={{ margin: '0 0 1.25rem 0', fontSize: '1.25rem', fontFamily: 'Plus Jakarta Sans' }}>Distribución de Métodos de Pago</h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--secondary)', marginBottom: '1.5rem' }}>Proporción de pagos en efectivo vs. transferencias digitales (QR)</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.9rem', fontWeight: '600' }}>
@@ -261,8 +261,8 @@ const Dashboard = () => {
       {/* Cash Arqueo */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
         <div className="card">
-          <h3 style={{ marginTop: 0, fontFamily: 'Plus Jakarta Sans' }}>Arqueo de Efectivo FÃ­sico</h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--secondary)', marginBottom: '1.25rem' }}>Ingrese el recuento fÃ­sico de billetes y monedas</p>
+          <h3 style={{ marginTop: 0, fontFamily: 'Plus Jakarta Sans' }}>Arqueo de Efectivo Físico</h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--secondary)', marginBottom: '1.25rem' }}>Ingrese el recuento físico de billetes y monedas</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             {Object.keys(cashArqueo).sort((a,b) => Number(b)-Number(a)).map(deno => (
               <div key={deno} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -284,15 +284,15 @@ const Dashboard = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
               <Receipt size={20} style={{ color: 'var(--primary)' }} />
-              <h3 style={{ margin: 0, fontFamily: 'Plus Jakarta Sans' }}>ConciliaciÃ³n de Caja</h3>
+              <h3 style={{ margin: 0, fontFamily: 'Plus Jakarta Sans' }}>Conciliación de Caja</h3>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.85rem 1.1rem', background: '#f8fafc', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                <span style={{ fontWeight: '500', color: 'var(--text-muted)' }}>Efectivo FÃ­sico:</span>
+                <span style={{ fontWeight: '500', color: 'var(--text-muted)' }}>Efectivo Físico:</span>
                 <strong style={{ fontSize: '1.15rem' }}>Bs. {totalArqueo.toFixed(2)}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.85rem 1.1rem', background: '#f8fafc', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                <span style={{ fontWeight: '500', color: 'var(--text-muted)' }}>Saldo TeÃ³rico (Caja):</span>
+                <span style={{ fontWeight: '500', color: 'var(--text-muted)' }}>Saldo Teórico (Caja):</span>
                 <strong style={{ fontSize: '1.15rem' }}>Bs. {(stats.cash_balance || 0).toFixed(2)}</strong>
               </div>
             </div>
@@ -304,8 +304,8 @@ const Dashboard = () => {
               borderColor: Math.abs(difference) < 0.01 ? 'rgba(16, 185, 129, 0.2)' : difference > 0 ? 'rgba(37, 99, 235, 0.2)' : 'rgba(239, 68, 68, 0.2)',
               fontWeight: 'bold', transition: 'var(--transition)'
             }}>
-              <p style={{ margin: 0, fontSize: '1.2rem', letterSpacing: '-0.02em', textTransform: 'uppercase', fontWeight: '800' }}>
-                {Math.abs(difference) < 0.01 ? 'âœ“ CAJA CUADRADA' : difference > 0 ? `SOBRANTE: +Bs. ${difference.toFixed(2)}` : `FALTANTE: -Bs. ${Math.abs(difference).toFixed(2)}`}
+                <p style={{ margin: 0, fontSize: '1.2rem', letterSpacing: '-0.02em', textTransform: 'uppercase', fontWeight: '800' }}>
+                {Math.abs(difference) < 0.01 ? '✓ CAJA CUADRADA' : difference > 0 ? `SOBRANTE: +Bs. ${difference.toFixed(2)}` : `FALTANTE: -Bs. ${Math.abs(difference).toFixed(2)}`}
               </p>
             </div>
             <p style={{ marginTop: '0.85rem', fontSize: '0.8rem', color: 'var(--secondary)', textAlign: 'center' }}>

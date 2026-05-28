@@ -117,11 +117,11 @@ const EmitReceipt = () => {
             ))}
           </datalist>
 
-          <label>Tipo de OperaciÃ³n</label>
+          <label>Tipo de Operación</label>
           <select value={category} onChange={(e) => setCategory(e.target.value)}>
             <optgroup label="INGRESOS">
-              <option value="Ingreso: InscripciÃ³n a campamentos">InscripciÃ³n a campamentos</option>
-              <option value="Ingreso: Sesiones de PsicologÃ­a">Sesiones de PsicologÃ­a</option>
+              <option value="Ingreso: Inscripción a campamentos">Inscripción a campamentos</option>
+              <option value="Ingreso: Sesiones de Psicología">Sesiones de Psicología</option>
               <option value="Ingreso: Alquileres">Alquileres</option>
               <option value="Ingreso: Transporte">Transporte</option>
               <option value="Ingreso: Otros ingresos">Otros ingresos</option>
@@ -156,7 +156,7 @@ const EmitReceipt = () => {
             value={concept} 
             onChange={(e) => setConcept(e.target.value)} 
             required 
-            placeholder="Detalle de la operaciÃ³n..." 
+            placeholder="Detalle de la operación..." 
           />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -169,7 +169,7 @@ const EmitReceipt = () => {
                 min="0" 
                 style={{ borderColor: '#059669' }}
               />
-              <small>Este monto entra a la caja fÃ­sica</small>
+              <small>Este monto entra a la caja física</small>
             </div>
             <div style={{ padding: '1rem', background: '#f5f3ff', borderRadius: '0.25rem' }}>
               <label style={{ color: '#5b21b6', fontWeight: 'bold' }}>PAGO QR / BANCO</label>
@@ -180,7 +180,7 @@ const EmitReceipt = () => {
                 min="0" 
                 style={{ borderColor: '#7c3aed' }}
               />
-              <small>Este monto NO entra a la caja fÃ­sica</small>
+              <small>Este monto NO entra a la caja física</small>
             </div>
           </div>
 
@@ -204,7 +204,7 @@ const EmitReceipt = () => {
           <div className="receipt-row"><span>Fecha:</span> <span>{lastReceipt.date}</span></div>
           <div className="receipt-row"><span>Entregado a/por:</span> <span>{lastReceipt.studentName}</span></div>
           <div className="receipt-row"><span>Concepto:</span> <span>{lastReceipt.concept}</span></div>
-          <div className="receipt-row"><span>CategorÃ­a:</span> <span>{lastReceipt.category}</span></div>
+          <div className="receipt-row"><span>Categoría:</span> <span>{lastReceipt.category}</span></div>
           <br />
           <div className="receipt-row"><span>Monto Efectivo:</span> <span>Bs. {Number(lastReceipt.amountCash).toFixed(2)}</span></div>
           <div className="receipt-row"><span>Monto QR/Banco:</span> <span>Bs. {Number(lastReceipt.amountQr).toFixed(2)}</span></div>
@@ -215,7 +215,7 @@ const EmitReceipt = () => {
           <p style={{ textAlign: 'center' }}>Emitido por: {lastReceipt.issuer}</p>
           <p style={{ textAlign: 'center', fontSize: '10px' }}>Documento de Control Interno</p>
           <div className="receipt-signature">
-            RecibÃ­ Conforme
+            Recibí Conforme
           </div>
         </div>
       )}
