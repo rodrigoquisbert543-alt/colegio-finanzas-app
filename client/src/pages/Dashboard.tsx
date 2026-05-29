@@ -1,10 +1,30 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { getStats, getUsers } from '../api';
 import { BarChart3, Wallet, Landmark, TrendingUp, Sparkles, Receipt } from 'lucide-react';
 
+type UserSession = { id?: number; name?: string; role?: string };
+type Cashier = { id: number; name: string; role: string };
+type StatsState = {
+  income_total: number;
+  expense_total: number;
+  cash_balance: number;
+  qr_balance: number;
+  income_cash_total: number;
+  income_qr_total: number;
+  expense_cash_total: number;
+  expense_qr_total: number;
+};
+
+type Filters = {
+  startDate: string;
+  endDate: string;
+  userId: string;
+};
+
 const Dashboard = () => {
-  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
-  const [stats, setStats] = useState({ 
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}') as UserSession;
+  const userRole = user.role || '';
+  const [stats, setStats] = useState<StatsState>({ 
     income_total: 0, 
     expense_total: 0, 
     cash_balance: 0, 
@@ -14,52 +34,55 @@ const Dashboard = () => {
     expense_cash_total: 0,
     expense_qr_total: 0
   });
-  const [filters, setFilters] = useState({ 
+  const [filters, setFilters] = useState<Filters>({ 
     startDate: '',
     endDate: '',
-    userId: user.role !== 'admin' && user.role !== 'contador' ? String(user.id ?? '') : ''
+    userId: userRole !== 'admin' && userRole !== 'contador' ? String(user.id ?? '') : ''
   });
-  const [cashiers, setCashiers] = useState<any[]>([]);
+  const [cashiers, setCashiers] = useState<Cashier[]>([]);
   const [loading, setLoading] = useState(false);
   const [cashArqueo, setCashArqueo] = useState<{ [key: string]: number }>({
     '200': 0, '100': 0, '50': 0, '20': 0, '10': 0, '5': 0, '2': 0, '1': 0, '0.5': 0
   });
 
-  const fetchStats = useCallback(async (currentFilters: typeof filters) => {
-    setLoading(true);
-    try {
-      const res = await getStats(currentFilters);
-      setStats({
-        income_total: Number(res.data.income_total || 0),
-        expense_total: Number(res.data.expense_total || 0),
-        cash_balance: Number(res.data.income_cash_total || 0) - Number(res.data.expense_cash_total || 0),
-        qr_balance: Number(res.data.income_qr_total || 0) - Number(res.data.expense_qr_total || 0),
-        income_cash_total: Number(res.data.income_cash_total || 0),
-        income_qr_total: Number(res.data.income_qr_total || 0),
-        expense_cash_total: Number(res.data.expense_cash_total || 0),
-        expense_qr_total: Number(res.data.expense_qr_total || 0)
-      });
-    } catch (error) {
-      console.error('Error al obtener estadísticas para el dashboard:', error);
-      setStats({ 
-        income_total: 0, expense_total: 0, cash_balance: 0, qr_balance: 0,
-        income_cash_total: 0, income_qr_total: 0, expense_cash_total: 0, expense_qr_total: 0
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Carga inicial y cuando cambian filtros
   useEffect(() => {
-    fetchStats(filters);
-  }, [filters, fetchStats]);
+    let active = true;
+    const loadStats = async () => {
+      setLoading(true);
+      try {
+        const res = await getStats(filters);
+        if (!active) return;
+        setStats({
+          income_total: Number(res.data.income_total || 0),
+          expense_total: Number(res.data.expense_total || 0),
+          cash_balance: Number(res.data.income_cash_total || 0) - Number(res.data.expense_cash_total || 0),
+          qr_balance: Number(res.data.income_qr_total || 0) - Number(res.data.expense_qr_total || 0),
+          income_cash_total: Number(res.data.income_cash_total || 0),
+          income_qr_total: Number(res.data.income_qr_total || 0),
+          expense_cash_total: Number(res.data.expense_cash_total || 0),
+          expense_qr_total: Number(res.data.expense_qr_total || 0)
+        });
+      } catch (error) {
+        if (!active) return;
+        console.error('Error al obtener estadísticas para el dashboard:', error);
+        setStats({ 
+          income_total: 0, expense_total: 0, cash_balance: 0, qr_balance: 0,
+          income_cash_total: 0, income_qr_total: 0, expense_cash_total: 0, expense_qr_total: 0
+        });
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void loadStats();
+    return () => { active = false; };
+  }, [filters]);
 
   useEffect(() => {
-    if (user.role === 'admin' || user.role === 'contador') {
+    if (userRole === 'admin' || userRole === 'contador') {
       getUsers().then(res => setCashiers(res.data)).catch(() => {});
     }
-  }, []);
+  }, [userRole]);
 
   const totalArqueo = Object.entries(cashArqueo).reduce((acc, [deno, cant]) => acc + (Number(deno) * cant), 0);
   const difference = totalArqueo - (stats.cash_balance || 0);

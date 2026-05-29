@@ -1,6 +1,15 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { getStudents, createReceipt, getLastReceiptByName } from '../api';
-import { Student } from '../types';
+import { Receipt, Student } from '../types';
+
+type PrintableReceipt = Receipt & {
+  studentName: string;
+  issuer: string;
+  amountCash: number;
+  amountQr: number;
+  totalAmount: number;
+  date: string;
+};
 
 const EmitReceipt = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -9,14 +18,13 @@ const EmitReceipt = () => {
   const [category, setCategory] = useState('Ingreso: Transporte');
   const [amountCash, setAmountCash] = useState(0);
   const [amountQr, setAmountQr] = useState(0);
+  const [lastReceipt, setLastReceipt] = useState<PrintableReceipt | null>(null);
   
   // Anti-translation list: we use Mayo (M) to confuse less the auto-translators, 
   // but better yet, we will use the translate="no" attribute in the HTML.
   const LIST_OF_MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   const [selectedMonth, setSelectedMonth] = useState(LIST_OF_MONTHS[new Date().getMonth()]);
-  
-  const [lastReceipt, setLastReceipt] = useState<any>(null);
-  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}') as { name?: string };
 
   const fetchSuggestions = () => {
     getStudents().then(res => setStudents(res.data));
@@ -27,13 +35,6 @@ const EmitReceipt = () => {
   }, []);
 
   // Auto-update concept for Transporte
-  useEffect(() => {
-    if (category === 'Ingreso: Transporte') {
-      const year = new Date().getFullYear();
-      setConcept(`Transporte - ${selectedMonth} ${year}`);
-    }
-  }, [category, selectedMonth]);
-
   const handleNameChange = async (name: string) => {
     setStudentName(name);
     
@@ -70,7 +71,7 @@ const EmitReceipt = () => {
         total_amount: totalAmount
       });
       
-      const receiptData = {
+      const receiptData: PrintableReceipt = {
         ...response.data,
         concept,
         category,
@@ -79,7 +80,7 @@ const EmitReceipt = () => {
         totalAmount,
         studentName: studentName || 'Cliente General',
         date: new Date().toLocaleString(),
-        issuer: user.name
+        issuer: user.name || 'Sistema'
       };
 
       setLastReceipt(receiptData);
@@ -93,8 +94,9 @@ const EmitReceipt = () => {
         fetchSuggestions(); 
       }, 500);
 
-    } catch (err: any) {
-      alert('Error al emitir el comprobante');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      alert(err.response?.data?.message || 'Error al emitir el comprobante');
     }
   };
 
@@ -118,7 +120,13 @@ const EmitReceipt = () => {
           </datalist>
 
           <label>Tipo de Operación</label>
-          <select value={category} onChange={(e) => setCategory(e.target.value)}>
+          <select value={category} onChange={(e) => {
+            const value = e.target.value;
+            setCategory(value);
+            if (value === 'Ingreso: Transporte') {
+              setConcept(`Transporte - ${selectedMonth} ${new Date().getFullYear()}`);
+            }
+          }}>
             <optgroup label="INGRESOS">
               <option value="Ingreso: Inscripción a campamentos">Inscripción a campamentos</option>
               <option value="Ingreso: Sesiones de Psicología">Sesiones de Psicología</option>
@@ -139,7 +147,13 @@ const EmitReceipt = () => {
               {/* Added translate="no" to avoid browser "Mayonesa" bug */}
               <select 
                 value={selectedMonth} 
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                onChange={(e) => {
+                  const month = e.target.value;
+                  setSelectedMonth(month);
+                  if (category === 'Ingreso: Transporte') {
+                    setConcept(`Transporte - ${month} ${new Date().getFullYear()}`);
+                  }
+                }}
                 translate="no"
                 className="notranslate"
               >

@@ -8,20 +8,21 @@ const Students = () => {
   const [grade, setGrade] = useState('');
   const [fee, setFee] = useState(0);
 
-  const fetchStudents = async () => {
-    const res = await getStudents();
-    setStudents(res.data);
-  };
-
   useEffect(() => {
-    fetchStudents();
+    const loadStudents = async () => {
+      const res = await getStudents();
+      setStudents(res.data);
+    };
+
+    void loadStudents();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await createStudent({ name, grade, monthly_fee: fee });
     setName(''); setGrade(''); setFee(0);
-    fetchStudents();
+    const res = await getStudents();
+    setStudents(res.data);
   };
 
   return (

@@ -3,6 +3,21 @@ import { getReceipts, cancelReceipt, getUsers, getStats } from '../api';
 import { Receipt } from '../types';
 import { XCircle, Printer } from 'lucide-react';
 
+type UserSession = { id?: number; name?: string; role?: string };
+type UserInfo = { id: number; name: string; role: string };
+type HistoryTotals = { income: number; expense: number; income_cash: number; income_qr: number };
+type PrintReceipt = {
+  folio: string;
+  date: string;
+  studentName: string;
+  concept: string;
+  category: string;
+  amountCash: number;
+  amountQr: number;
+  totalAmount: number;
+  issuer: string;
+};
+
 interface HistoryFilters {
   startDate: string;
   endDate: string;
@@ -13,7 +28,8 @@ interface HistoryFilters {
 }
 
 const History = () => {
-  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}') as UserSession;
+  const userRole = user.role || '';
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [filters, setFilters] = useState<HistoryFilters>({
     startDate: '',
@@ -21,12 +37,12 @@ const History = () => {
     folio: '',
     category: '',
     studentName: '',
-    userId: user.role !== 'admin' && user.role !== 'contador' ? String(user.id ?? '') : '',
+    userId: userRole !== 'admin' && userRole !== 'contador' ? String(user.id ?? '') : '',
   });
   const [categoryValues, setCategoryValues] = useState<string[]>([]);
-  const [cajeros, setCajeros] = useState<any[]>([]);
-  const [selectedForPrint, setSelectedForPrint] = useState<any>(null);
-  const [filteredTotals, setFilteredTotals] = useState({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
+  const [cajeros, setCajeros] = useState<UserInfo[]>([]);
+  const [selectedForPrint, setSelectedForPrint] = useState<PrintReceipt | null>(null);
+  const [filteredTotals, setFilteredTotals] = useState<HistoryTotals>({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
   const [loading, setLoading] = useState(false);
   const requestVersionRef = useRef(0);
   const categoryDebounceRef = useRef<number | ReturnType<typeof setTimeout> | null>(null);
@@ -92,7 +108,7 @@ const History = () => {
         } else {
           setFilteredTotals(parsedTotals);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (version !== requestVersionRef.current) return;
         console.error('Error al cargar datos:', error);
         setReceipts([]);
@@ -107,12 +123,14 @@ const History = () => {
   }, [filters]);
 
   useEffect(() => {
-    if (user.role === 'admin' || user.role === 'contador') {
+    if (userRole === 'admin' || userRole === 'contador') {
       getUsers()
         .then(res => setCajeros(res.data))
-        .catch(() => {});
+        .catch(() => {
+          console.error('Error al cargar cajeros');
+        });
     }
-  }, []);
+  }, [userRole]);
 
   const handleCancel = async (id: number) => {
     const reason = prompt('Motivo de la anulación:');
@@ -120,7 +138,8 @@ const History = () => {
     try {
       await cancelReceipt(id, reason);
       setFilters(prev => ({ ...prev }));
-    } catch (err) {
+    } catch (error: unknown) {
+      console.error('Error al anular comprobante:', error);
       alert('Error al anular');
     }
   };
@@ -254,13 +273,13 @@ const History = () => {
             value={filters.endDate}
             onChange={e => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
           />
-          {(user.role === 'admin' || user.role === 'contador') && (
+          {(userRole === 'admin' || userRole === 'contador') && (
             <select
               value={filters.userId || ''}
               onChange={e => setFilters(prev => ({ ...prev, userId: e.target.value }))}
             >
               <option value="">Todos los Cajeros</option>
-              {cajeros.map((c: any) => (
+              {cajeros.map((c: UserInfo) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
