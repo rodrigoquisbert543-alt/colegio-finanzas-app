@@ -3,7 +3,7 @@ import { getStats, getUsers } from '../api';
 import { BarChart3, Wallet, Landmark, TrendingUp, Sparkles, Receipt } from 'lucide-react';
 
 const Dashboard = () => {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   const [stats, setStats] = useState({ 
     income_total: 0, 
     expense_total: 0, 
@@ -174,7 +174,7 @@ const Dashboard = () => {
         <div className="card" style={{ borderLeft: '6px solid var(--primary)', background: 'linear-gradient(135deg, #ffffff 0%, hsl(var(--primary-hue), 85%, 99%) 100%)', opacity: loading ? 0.7 : 1, transition: 'opacity 0.3s' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
             <div>
-              <p style={{ color: 'var(--secondary)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Saldo Efectivo Físico</p>
+              <p style={{ color: 'var(--secondary)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Saldo Teórico de Caja</p>
               <h3 style={{ fontSize: '2rem', color: 'var(--primary)', margin: '0.5rem 0 0 0', fontWeight: '800' }}>Bs. {Number(stats.cash_balance || 0).toFixed(2)}</h3>
             </div>
             <div style={{ padding: '0.6rem', borderRadius: '0.5rem', background: 'hsl(var(--primary-hue), 85%, 95%)', color: 'var(--primary)' }}>
