@@ -9,7 +9,7 @@ import Layout from './components/Layout';
 import './App.css';
 
 const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-  const token = sessionStorage.getItem('token');
+  const token = localStorage.getItem('token');
   return token ? children : <Navigate to="/login" />;
 };
 
