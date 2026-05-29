@@ -13,7 +13,7 @@ interface HistoryFilters {
 }
 
 const History = () => {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [filters, setFilters] = useState<HistoryFilters>({
     startDate: '',
@@ -29,7 +29,7 @@ const History = () => {
   const [filteredTotals, setFilteredTotals] = useState({ income: 0, expense: 0, income_cash: 0, income_qr: 0 });
   const [loading, setLoading] = useState(false);
   const requestVersionRef = useRef(0);
-  const categoryDebounceRef = useRef<number | NodeJS.Timeout | null>(null);
+  const categoryDebounceRef = useRef<number | ReturnType<typeof setTimeout> | null>(null);
 
   const categoryTotals = React.useMemo(() => {
     const map: Record<string, number> = {};

@@ -16,7 +16,7 @@ const EmitReceipt = () => {
   const [selectedMonth, setSelectedMonth] = useState(LIST_OF_MONTHS[new Date().getMonth()]);
   
   const [lastReceipt, setLastReceipt] = useState<any>(null);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
 
   const fetchSuggestions = () => {
     getStudents().then(res => setStudents(res.data));
